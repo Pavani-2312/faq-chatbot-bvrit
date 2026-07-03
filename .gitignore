@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Scraper output files
+scaper/output/
+
+# Root-level scraped data
+scraped_data.json
+
+# OS / editor
+.DS_Store
+.env
+*.swp
+*.swo
