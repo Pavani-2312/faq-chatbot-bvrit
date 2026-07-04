@@ -4,21 +4,25 @@ eval/test_runner.py
 Executes every test case from tests/test_cases.json against the live chatbot
 and saves raw results to tests/test_results.json.
 
-Each result record:
+Handles the 07-Context dimension by injecting turn_1 as prior history before
+running the follow-up question, simulating a real multi-turn conversation.
+
+Each result record (Architecture.md §6.4):
 {
-  "id":               "TC_001",
-  "dimension":        "D01_functional_completeness",
+  "test_id":          "FUNC-01",
+  "dimension":        "01-Functional",
   "question":         "...",
-  "expected":         "...",
+  "expected_answer":  "...",
   "pass_criteria":    "...",
   "actual_answer":    "...",
-  "retrieved_chunks": [...],    // metadata only, not full content
+  "retrieved_chunks": [...],    // lightweight summaries
   "citations":        [...],
   "latency_sec":      2.34,
-  "is_refusal":       false,
+  "refused":          false,
   "has_conflict":     false,
+  "was_injected":     false,
   "error":            null,
-  "judge_score":      null,     // filled in by judge.py later
+  "judge_score":      null,     // filled in by judge.py
   "judge_reason":     null,
   "passed":           null
 }
@@ -61,7 +65,7 @@ def _chunk_summary(chunks: list[dict]) -> list[dict]:
 def run_all(test_cases_path: Path = TEST_CASES_PATH) -> list[dict]:
     """
     Load test cases, run each through the chatbot, and return result records.
-    Also writes results to TEST_RESULTS_PATH.
+    Writes results to TEST_RESULTS_PATH.
     """
     # -- Load test cases --------------------------------------------------
     if not test_cases_path.exists():
@@ -81,27 +85,38 @@ def run_all(test_cases_path: Path = TEST_CASES_PATH) -> list[dict]:
     # -- Run each test case -----------------------------------------------
     results = []
     for i, tc in enumerate(test_cases, start=1):
-        tc_id = tc.get("id", f"TC_{i:03d}")
+        tc_id = tc.get("test_id", f"TC_{i:03d}")
         question = tc["question"]
         dimension = tc["dimension"]
-        section_hint = tc.get("section_hint", None)
+        section_hint = tc.get("context_hint", None)
         is_complex = tc.get("is_complex", False)
 
         print(f"[{i:02d}/{len(test_cases)}] {tc_id} | {dimension}")
 
+        # 07-Context: inject turn_1 as prior history before the follow-up
+        history = []
+        if dimension == "07-Context" and tc.get("turn_1"):
+            turn_1_q = tc["turn_1"]
+            # Run turn_1 silently to get a real chatbot answer as prior context
+            turn_1_resp = chatbot.ask(question=turn_1_q, history=[], k=TOP_K)
+            history = [
+                {"role": "user", "content": turn_1_q},
+                {"role": "assistant", "content": turn_1_resp.answer},
+            ]
+
         response = chatbot.ask(
             question=question,
-            history=[],   # each test case is independent (no prior context)
+            history=history,
             k=TOP_K,
             section_filter=section_hint,
         )
 
-        # D06: numeric SLA check (no judge needed)
+        # 06-Performance: numeric SLA check (no judge needed)
         passed = None
         judge_score = None
         judge_reason = None
 
-        if dimension == "D06_performance_latency":
+        if dimension == "06-Performance":
             sla = SLA_COMPLEX_QUERY_SEC if is_complex else SLA_SIMPLE_QUERY_SEC
             passed = response.latency_sec <= sla
             judge_score = 1 if passed else 0
@@ -111,26 +126,29 @@ def run_all(test_cases_path: Path = TEST_CASES_PATH) -> list[dict]:
             )
 
         result = {
-            "id": tc_id,
+            "test_id": tc_id,
             "dimension": dimension,
             "question": question,
-            "expected": tc.get("expected", ""),
+            "expected_answer": tc.get("expected_answer", ""),
             "pass_criteria": tc.get("pass_criteria", ""),
             "actual_answer": response.answer,
             "retrieved_chunks": _chunk_summary(response.retrieved_chunks),
             "citations": response.citations,
             "latency_sec": response.latency_sec,
-            "is_refusal": response.is_refusal,
+            "refused": response.refused,
             "has_conflict": response.has_conflict,
+            "was_injected": response.was_injected,
             "error": response.error,
             "judge_score": judge_score,
             "judge_reason": judge_reason,
             "passed": passed,
+            # preserve turn_1 for reference in dashboard drill-downs
+            "turn_1": tc.get("turn_1"),
         }
         results.append(result)
 
         # Brief status line
-        status = "ERROR" if response.error else ("REFUSAL" if response.is_refusal else "OK")
+        status = "ERROR" if response.error else ("REFUSED" if response.refused else "OK")
         print(f"       {status} | {response.latency_sec:.2f}s | {len(response.citations)} citations")
 
     # -- Save results -----------------------------------------------------
@@ -142,9 +160,12 @@ def run_all(test_cases_path: Path = TEST_CASES_PATH) -> list[dict]:
 
     # Summary
     errors = sum(1 for r in results if r["error"])
-    d06_passed = sum(1 for r in results if r["dimension"] == "D06_performance_latency" and r["passed"])
-    d06_total = sum(1 for r in results if r["dimension"] == "D06_performance_latency")
-    print(f"[test_runner] Errors: {errors} | D06 (latency): {d06_passed}/{d06_total} passed")
+    d06_results = [r for r in results if r["dimension"] == "06-Performance"]
+    d06_passed = sum(1 for r in d06_results if r["passed"])
+    print(
+        f"[test_runner] Errors: {errors} | "
+        f"06-Performance: {d06_passed}/{len(d06_results)} passed"
+    )
 
     return results
 

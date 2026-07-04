@@ -4,12 +4,15 @@ chatbot.py
 Core orchestration layer for the BVRIT FAQ Chatbot.
 
 Pipeline per query:
-  1. Prompt-injection guard (fast, pre-retrieval)
+  1. Prompt-injection guard (fast, pre-retrieval) — maps to Dimension 04-Security
   2. Retrieve top-k chunks from ChromaDB (via retriever.py)
   3. Build grounded prompt (via prompts.py)
   4. Call LLM (GPT-4o Mini via OpenRouter)
   5. Return structured ChatResponse with answer, citations, retrieved chunks,
-     latency, and refusal/conflict flags
+     latency, and refusal/conflict/safety flags
+
+Response schema aligns with Architecture.md §6.2:
+  {answer, citations, refused, retrieved_chunks, latency_seconds}
 
 This module is stateless — conversation memory is managed by the caller
 (app.py or test_runner.py) via memory.py.
@@ -40,12 +43,13 @@ if not OPENROUTER_API_KEY:
         "OPENROUTER_API_KEY is not set. "
         "Add it to your .env file: OPENROUTER_API_KEY=sk-or-v1-..."
     )
+
 from prompts import SYSTEM_PROMPT, build_user_message
 from retriever import Retriever
 
 
 # ---------------------------------------------------------------------------
-# Response dataclass
+# Response dataclass — aligns with Architecture.md §6.2
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -54,10 +58,15 @@ class ChatResponse:
     citations: list[str]                 # extracted [Section, Page N] strings
     retrieved_chunks: list[dict]         # raw chunks from retriever (for RAGAS / debug)
     latency_sec: float                   # wall-clock time for full pipeline
-    is_refusal: bool = False             # True if the answer is a graceful refusal
+    refused: bool = False                # True if the answer is a graceful refusal (D03/D05)
     has_conflict: bool = False           # True if ⚠️ conflict flag is in the answer
-    was_injected: bool = False           # True if prompt-injection attempt detected
+    was_injected: bool = False           # True if prompt-injection attempt detected (D04)
     error: Optional[str] = None         # set if an exception occurred
+
+    # Convenience alias used in some eval code
+    @property
+    def is_refusal(self) -> bool:
+        return self.refused
 
 
 # ---------------------------------------------------------------------------
@@ -78,16 +87,29 @@ class BVRITChatbot:
         )
     """
 
-    # Phrases that indicate the model is refusing (no info in KB)
+    # Phrases that indicate the model is refusing (no info in KB) — D05 Graceful Refusal
     _REFUSAL_PHRASES = [
         "i don't have that information",
         "not present in the knowledge base",
         "not available in the retrieved context",
+        "not available in the context",
         "not published on website",
         "not found in the context",
         "i cannot find",
         "the knowledge base does not contain",
         "no information available",
+        "not in my knowledge base",
+        "not in the knowledge base",
+    ]
+
+    # Phrases that indicate a safety-related refusal — D03 Safety
+    _SAFETY_PHRASES = [
+        "cannot guarantee",
+        "i cannot promise",
+        "based on past data",
+        "historically",
+        "as per published records",
+        "i can only answer questions about bvrit",
     ]
 
     def __init__(self, retriever: Retriever) -> None:
@@ -124,7 +146,7 @@ class BVRITChatbot:
         history = history or []
         start = time.perf_counter()
 
-        # ---- 1. Prompt-injection guard --------------------------------
+        # ---- 1. Prompt-injection guard (D04-Security) -----------------
         if self._is_injection(question):
             elapsed = time.perf_counter() - start
             answer = (
@@ -136,7 +158,7 @@ class BVRITChatbot:
                 citations=[],
                 retrieved_chunks=[],
                 latency_sec=round(elapsed, 3),
-                is_refusal=True,
+                refused=True,
                 was_injected=True,
             )
 
@@ -188,11 +210,11 @@ class BVRITChatbot:
 
         # ---- 5. Post-process ------------------------------------------
         citations = self._extract_citations(answer)
-        is_refusal = self._detect_refusal(answer)
-        has_conflict = "⚠️" in answer or "conflicting information" in answer.lower()
+        refused = self._detect_refusal(answer)
+        has_conflict = "⚠️" in answer or "sources differ" in answer.lower()
 
         # Append fallback contact to refusals if not already present
-        if is_refusal and "bvrithyderabad.edu.in" not in answer:
+        if refused and "bvrithyderabad.edu.in" not in answer:
             answer = f"{answer}\n\n{FALLBACK_CONTACT}"
 
         return ChatResponse(
@@ -200,7 +222,7 @@ class BVRITChatbot:
             citations=citations,
             retrieved_chunks=chunks,
             latency_sec=round(elapsed, 3),
-            is_refusal=is_refusal,
+            refused=refused,
             has_conflict=has_conflict,
         )
 
@@ -209,7 +231,7 @@ class BVRITChatbot:
     # ------------------------------------------------------------------
 
     def _is_injection(self, text: str) -> bool:
-        """Return True if the input looks like a prompt-injection attempt."""
+        """Return True if the input looks like a prompt-injection attempt (D04)."""
         lower = text.lower()
         return any(pattern in lower for pattern in INJECTION_PATTERNS)
 
@@ -221,6 +243,6 @@ class BVRITChatbot:
         return re.findall(r"\[([^\[\]]+)\]", answer)
 
     def _detect_refusal(self, answer: str) -> bool:
-        """Return True if the answer is a graceful refusal."""
+        """Return True if the answer is a graceful refusal (D03/D05)."""
         lower = answer.lower()
         return any(phrase in lower for phrase in self._REFUSAL_PHRASES)

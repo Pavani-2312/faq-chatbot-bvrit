@@ -124,25 +124,50 @@ SUBNAV_LINES = {
     "Seed Funding", "IRINS Link", "Plagiarism Tool", "Research Facility",
 }
 
+# Lines that should NEVER be promoted to headings even if they look like one
+NEVER_HEADING = {
+    "DELNET", "IEEE XPLORE", "J-Gate", "IEEE-ASPP, J-GATE (JET)",
+    "CSE, IT & BS&H", "ECE & EEE", "KNIMBUS platform",
+    "VOLUMES", "TITLES", "SEATING CAPACITY", "NATIONAL JOURNALS",
+    "MAGAZINES", "ELECTRONIC JOURNALS", "CD",
+    "AICTE ID", "JNTUH ID",
+}
+
 # Lines that look like section headings (ALL CAPS or known heading patterns)
 def is_heading(line: str) -> bool:
-    if not line:
+    if not line or line in NEVER_HEADING:
         return False
-    # All caps, at least 4 chars, no trailing punctuation that would make it a sentence
-    if line.isupper() and len(line) >= 4 and not line.endswith((".", "?", "!")):
+    # All caps phrases that are too short (abbreviations, IDs) — skip
+    if line.isupper() and len(line) <= 6:
+        return False
+    # All caps lines that look like acronyms or short labels (no spaces): skip
+    if line.isupper() and " " not in line:
+        return False
+    # All caps, at least 5 chars with at least one space, no sentence punctuation
+    if line.isupper() and len(line) >= 5 and " " in line and not line.endswith((".", "?", "!")):
+        # But skip lines that are obviously data (contain digits mixed with text)
+        if re.search(r'\d{4,}', line):
+            return False
         return True
     # Known heading keywords
     known = [
-        "Vision", "Mission", "About ", "Faculty", "Placements",
-        "Highlights", "Library automation", "Digital library",
-        "Remote access", "Plagiarism Check", "Rare Books", "Library Staff",
+        "Vision", "Mission", "Highlights",
+        "Library automation", "Digital library",
+        "Remote access – ", "Plagiarism Check", "Rare Books", "Library Staff",
         "Library Timings", "Library Catalogue", "e-library", "e resources",
-        "Floor Wise", "FLOOR WISE", "GROUND FLOOR", "FIRST FLOOR",
-        "SECOND FLOOR", "THIRD FLOOR",
+        "Floor Wise Directory",
         "Program Outcomes", "PROGRAM OUTCOMES",
         "Undergraduate programmes", "Postgraduate programmes",
-        "Sponsored R&D", "Awards", "International / National",
+        "Sponsored R&D Funded Projects",
+        "International / National Journals",
+        "International Conferences",
         "Our Core Values",
+        "FDP's Conducted", "FDP's Attended",
+        "Certifications", "Books Published", "Book Chapter Published",
+        "Board Member", "Invited Talks",
+        "Granted:", "Published:",
+        "Placement Team", "Placement Details",
+        "Companies - wise placement details",
     ]
     return any(line.startswith(kw) for kw in known)
 
@@ -216,16 +241,13 @@ def format_body(raw_lines: list[str], page_slug: str) -> str:
             i += 1
             continue
 
-        # ── Numbered list items (1, 2, 3... or "1." "2.") ──
-        m = re.match(r'^(\d+)\s+(.+)$', line)
-        if m and len(m.group(1)) <= 2 and not re.match(r'^\d+\s+\d', line):
-            # Could be a numbered list or a table row starting with a number
-            # Treat as numbered list only if next line is also a numbered item
-            # or line is short (< 60 chars) — otherwise it's likely a table row
-            if len(line) < 80:
-                out.append(f"{m.group(1)}. {m.group(2)}")
-                i += 1
-                continue
+        # ── Numbered list items — only if it's a standalone digit followed by
+        #    a short label (core values: "1 Holistic development", etc.) ──
+        m = re.match(r'^(\d{1,2})\s+([A-Z].{3,50})$', line)
+        if m and not re.search(r'\d', m.group(2)[:5]):
+            out.append(f"{m.group(1)}. {m.group(2)}")
+            i += 1
+            continue
 
         # ── Bullet list items ──
         if line.startswith(("- ", "• ", "* ")):
@@ -237,7 +259,13 @@ def format_body(raw_lines: list[str], page_slug: str) -> str:
         # A table row is a line with multiple short pipe/space-separated tokens
         tokens = re.split(r'\s{2,}|\t', line)
         tokens = [t.strip() for t in tokens if t.strip()]
-        if len(tokens) >= 3 and all(len(t) < 60 for t in tokens):
+        # Only treat as table if: 3+ tokens, all short, AND the line is not a heading candidate
+        # AND not a line that's clearly a paragraph sentence
+        is_sentence = line.endswith((".","?","!")) or len(line) > 100
+        if (len(tokens) >= 3
+                and all(len(t) < 60 for t in tokens)
+                and not is_sentence
+                and not is_heading(line)):
             table_mode = True
             table_rows.append(tokens)
             i += 1

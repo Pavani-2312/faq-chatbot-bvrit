@@ -2,7 +2,7 @@
 eval/ragas_eval.py
 ------------------
 Computes RAGAS metrics (faithfulness, answer_relevancy, context_precision,
-context_recall) for the D08_ragas_metrics dimension test cases.
+context_recall) for the 08-RAGAS dimension test cases.
 
 Uses the `ragas` library with OpenAI as the LLM/embedding backend.
 
@@ -74,7 +74,7 @@ def run_ragas_eval(results_path: Path = TEST_RESULTS_PATH) -> dict:
     # Filter D08 cases that have real answers (no errors)
     d08_cases = [
         r for r in results
-        if r["dimension"] == "D08_ragas_metrics" and not r.get("error")
+        if r["dimension"] == "08-RAGAS" and not r.get("error")
     ]
 
     if not d08_cases:
@@ -99,7 +99,7 @@ def run_ragas_eval(results_path: Path = TEST_RESULTS_PATH) -> dict:
             if chunk.get("content_preview")
         ]
         contexts.append(ctx if ctx else [""])
-        ground_truths.append(r["expected"])
+        ground_truths.append(r["expected_answer"])
 
     dataset = Dataset.from_dict(
         {

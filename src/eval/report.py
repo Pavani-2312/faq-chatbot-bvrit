@@ -4,31 +4,31 @@ eval/report.py
 Aggregates test results + RAGAS scores into a structured evaluation report
 saved to tests/evaluation_report.json.
 
-The report is consumed by the Dashboard tab in app.py.
+Consumed by the Dashboard tab in app.py.
 
-Report structure:
+Report schema (Architecture.md §6.5):
 {
-  "generated_at":     ISO timestamp,
-  "total_cases":      int,
-  "overall_pass":     int,
-  "overall_fail":     int,
-  "overall_rate":     float (0–1),
-  "weakest_dimension": str,
-  "fix_recommendation": str,
-  "dimensions": {
-    "D01_functional_completeness": {
-      "total": int, "passed": int, "failed": int, "pass_rate": float,
-      "cases": [...]
+  "summary": {
+    "total": int, "passed": int, "failed": int, "pass_rate": float
+  },
+  "per_dimension": {
+    "01-Functional": {
+      "passed": int, "failed": int, "total": int, "pass_rate": float,
+      "cases": [{"test_id", "question", "passed", "judge_reason",
+                 "actual_answer", "expected_answer", "latency_sec",
+                 "refused", "has_conflict", "was_injected"}]
     },
     ...
   },
-  "ragas": {
-    "faithfulness":      {"score": float, "target": float, "passed": bool},
-    "answer_relevancy":  {...},
-    "context_precision": {...},
-    "context_recall":    {...}
+  "weakest_dimension": str,
+  "recommendation": str,
+  "ragas_scores": {
+    "faithfulness": float, "answer_relevancy": float,
+    "context_precision": float, "context_recall": float
   },
-  "error_cases": [...]
+  "ragas_diagnosis": str,
+  "error_cases": [{"test_id", "error"}],
+  "generated_at": ISO timestamp
 }
 """
 
@@ -36,7 +36,6 @@ from __future__ import annotations
 
 import json
 import sys
-from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -47,50 +46,90 @@ from config import (
     EVAL_REPORT_PATH,
     TEST_RESULTS_PATH,
     TESTS_DIR,
+    RAGAS_FAITHFULNESS_TARGET,
+    RAGAS_ANSWER_RELEVANCY_TARGET,
+    RAGAS_CONTEXT_PRECISION_TARGET,
+    RAGAS_CONTEXT_RECALL_TARGET,
 )
 
 RAGAS_SCORES_PATH = TESTS_DIR / "ragas_scores.json"
 
 # ---------------------------------------------------------------------------
-# Fix recommendations per dimension (surfaced when dimension fails)
+# Fix recommendations per dimension — aligned to brief §5 Step D
 # ---------------------------------------------------------------------------
 FIX_RECOMMENDATIONS = {
-    "D01_functional_completeness": (
-        "Increase top-k retrieval or ensure all-branch/all-department content is well chunked. "
-        "Check that list-type pages (e.g., Intake of Courses) are not split across chunk boundaries."
+    "01-Functional": (
+        "Increase top-k retrieval or ensure all list-type content (departments, courses) is "
+        "not split across chunk boundaries. Verify citation instructions in the system prompt."
     ),
-    "D02_factual_accuracy": (
-        "Verify that specific figures (fees, packages) are present verbatim in the knowledge base. "
-        "Consider reducing chunk size so precise numbers aren't buried mid-chunk."
+    "02-Quality": (
+        "Verify that specific facts (fees, packages, intake numbers) appear verbatim in the "
+        "knowledge base. Consider reducing chunk size so precise numbers are not buried mid-chunk."
     ),
-    "D03_grounding_no_hallucination": (
-        "Strengthen the system prompt grounding rules. Consider lowering generation temperature "
-        "further (toward 0). Add a post-generation check that flags answers not grounded in retrieved context."
+    "03-Safety": (
+        "Strengthen clause 6 of the system prompt (Safety constraint). Ensure the model uses "
+        "hedging language ('based on past data', 'historically') for outcome-related questions."
     ),
-    "D04_citation_quality": (
-        "Reinforce citation instructions in the system prompt. "
-        "Add a post-processing step that warns if no [Section] pattern is found in the response."
+    "04-Security": (
+        "Strengthen clause 7 of the system prompt (Injection-defence). Add explicit examples "
+        "of injection patterns to the prompt and expand INJECTION_PATTERNS in config.py."
     ),
-    "D05_graceful_refusal": (
-        "Review refusal detection phrases in chatbot.py. "
-        "Ensure the fallback contact is always appended when the model refuses."
+    "05-Robustness": (
+        "Add pre-retrieval input validation in chatbot.py for empty/gibberish/very-long inputs. "
+        "Return a graceful refusal immediately for inputs that cannot form a meaningful query."
     ),
-    "D06_performance_latency": (
+    "06-Performance": (
         "Profile which step is slow: retrieval vs. LLM generation. "
-        "For retrieval: verify ChromaDB is using ANN (not exact) search for large collections. "
-        "For generation: reduce MAX_TOKENS or switch to a faster model for simple queries."
+        "For retrieval: verify ChromaDB is using ANN (not exact) search. "
+        "For generation: reduce GENERATION_MAX_TOKENS or switch to a faster model."
     ),
-    "D07_conflict_handling": (
-        "Check that conflicting chunks are being retrieved together (top-k may need to be higher). "
-        "Strengthen the conflict-handling instruction in the system prompt with explicit examples."
+    "07-Context": (
+        "Increase MAX_HISTORY_TURNS in memory.py. Verify that conversation history is correctly "
+        "injected into the prompt. Test multi-turn resolution manually before re-running."
     ),
-    "D08_ragas_metrics": (
-        "Low faithfulness → model is hallucinating beyond retrieved context; tighten grounding prompt. "
-        "Low relevancy → retrieval is returning off-topic chunks; improve embedding model or chunk boundaries. "
-        "Low precision → too many irrelevant chunks retrieved; reduce top-k or add section filtering. "
-        "Low recall → relevant chunks not being retrieved; check chunk size and overlap."
+    "08-RAGAS": (
+        "Low faithfulness → model is hallucinating; tighten grounding clause in system prompt. "
+        "Low relevancy → retrieval returning off-topic chunks; improve chunking boundaries. "
+        "Low precision → too many irrelevant chunks; reduce top-k or add section filtering. "
+        "Low recall → relevant chunks not retrieved; check chunk size and overlap."
     ),
 }
+
+# RAGAS metric display names and targets
+RAGAS_TARGETS = {
+    "faithfulness": RAGAS_FAITHFULNESS_TARGET,
+    "answer_relevancy": RAGAS_ANSWER_RELEVANCY_TARGET,
+    "context_precision": RAGAS_CONTEXT_PRECISION_TARGET,
+    "context_recall": RAGAS_CONTEXT_RECALL_TARGET,
+}
+
+
+def _ragas_diagnosis(ragas_scores: dict) -> str:
+    """Generate a one-sentence diagnosis of the lowest RAGAS metric."""
+    if not ragas_scores:
+        return ""
+    lowest_key = min(ragas_scores, key=lambda k: ragas_scores[k].get("score", 1.0))
+    score = ragas_scores[lowest_key]["score"]
+    target = ragas_scores[lowest_key]["target"]
+    diagnoses = {
+        "faithfulness": (
+            f"Faithfulness ({score:.2f}) is lowest — model may be hallucinating beyond "
+            f"retrieved context. Tighten the grounding clause in the system prompt."
+        ),
+        "answer_relevancy": (
+            f"Answer Relevancy ({score:.2f}) is lowest — responses are not fully addressing "
+            f"the question. Review retrieval quality and prompt focus."
+        ),
+        "context_precision": (
+            f"Context Precision ({score:.2f}) is lowest — retrieval returns some irrelevant "
+            f"chunks. Consider reducing top-k or adding section metadata filters."
+        ),
+        "context_recall": (
+            f"Context Recall ({score:.2f}) is lowest — relevant chunks are not being retrieved. "
+            f"Check chunk size ({score:.2f} < {target}) and overlap settings."
+        ),
+    }
+    return diagnoses.get(lowest_key, f"{lowest_key} score ({score:.2f}) is below target ({target}).")
 
 
 def build_report(
@@ -114,40 +153,49 @@ def build_report(
         ragas_summary = json.loads(ragas_scores_path.read_text(encoding="utf-8"))
 
     # ---- Aggregate by dimension ----------------------------------------
-    dim_data: dict[str, dict] = {}
+    per_dim: dict[str, dict] = {}
     for dim in EVAL_DIMENSIONS:
-        dim_data[dim] = {"total": 0, "passed": 0, "failed": 0, "pass_rate": 0.0, "cases": []}
+        per_dim[dim] = {
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "pass_rate": 0.0,
+            "cases": [],
+        }
 
     error_cases = []
 
     for r in results:
         dim = r.get("dimension", "unknown")
-        if dim not in dim_data:
-            dim_data[dim] = {"total": 0, "passed": 0, "failed": 0, "pass_rate": 0.0, "cases": []}
+        if dim not in per_dim:
+            per_dim[dim] = {"total": 0, "passed": 0, "failed": 0, "pass_rate": 0.0, "cases": []}
 
-        dim_data[dim]["total"] += 1
-        dim_data[dim]["cases"].append(
+        per_dim[dim]["total"] += 1
+        per_dim[dim]["cases"].append(
             {
-                "id": r["id"],
+                "test_id": r["test_id"],
                 "question": r["question"],
+                "expected_answer": r.get("expected_answer", ""),
+                "actual_answer": r.get("actual_answer", ""),
                 "passed": r.get("passed"),
                 "judge_reason": r.get("judge_reason", ""),
                 "latency_sec": r.get("latency_sec"),
-                "is_refusal": r.get("is_refusal", False),
+                "refused": r.get("refused", False),
                 "has_conflict": r.get("has_conflict", False),
+                "was_injected": r.get("was_injected", False),
             }
         )
 
         if r.get("error"):
-            error_cases.append({"id": r["id"], "error": r["error"]})
+            error_cases.append({"test_id": r["test_id"], "error": r["error"]})
 
         if r.get("passed") is True:
-            dim_data[dim]["passed"] += 1
+            per_dim[dim]["passed"] += 1
         elif r.get("passed") is False:
-            dim_data[dim]["failed"] += 1
+            per_dim[dim]["failed"] += 1
 
     # Compute pass rates
-    for dim, data in dim_data.items():
+    for dim, data in per_dim.items():
         if data["total"] > 0:
             data["pass_rate"] = round(data["passed"] / data["total"], 4)
 
@@ -157,38 +205,45 @@ def build_report(
     overall_fail = sum(1 for r in judged if not r["passed"])
     overall_rate = round(overall_pass / len(judged), 4) if judged else 0.0
 
-    # ---- Weakest dimension ----------------------------------------------
+    # ---- Weakest dimension (excluding 08-RAGAS if RAGAS scores exist) ---
     scored_dims = {
-        dim: data for dim, data in dim_data.items()
-        if data["total"] > 0 and dim != "D08_ragas_metrics"
+        dim: data
+        for dim, data in per_dim.items()
+        if data["total"] > 0 and dim != "08-RAGAS"
     }
     weakest_dim = (
         min(scored_dims, key=lambda d: scored_dims[d]["pass_rate"])
         if scored_dims else "N/A"
     )
 
-    # For D08, use the lowest RAGAS metric score
+    # Check if a RAGAS metric is weaker
     if ragas_summary:
-        lowest_ragas = min(ragas_summary.items(), key=lambda x: x[1]["score"])
-        if not scored_dims or lowest_ragas[1]["score"] < scored_dims.get(weakest_dim, {}).get("pass_rate", 1.0):
-            weakest_dim = f"D08_ragas_metrics ({lowest_ragas[0]})"
+        lowest_ragas_score = min(
+            v["score"] for v in ragas_summary.values() if isinstance(v, dict)
+        )
+        if not scored_dims or lowest_ragas_score < scored_dims.get(weakest_dim, {}).get("pass_rate", 1.0):
+            lowest_key = min(ragas_summary, key=lambda k: ragas_summary[k].get("score", 1.0))
+            weakest_dim = f"08-RAGAS ({lowest_key})"
 
-    fix_rec = FIX_RECOMMENDATIONS.get(
+    recommendation = FIX_RECOMMENDATIONS.get(
         weakest_dim.split(" ")[0],
         "Review the failing test cases and examine retrieved chunks for that dimension.",
     )
 
-    # ---- Assemble report ------------------------------------------------
+    # ---- Assemble report per Architecture.md §6.5 ----------------------
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "total_cases": len(results),
-        "overall_pass": overall_pass,
-        "overall_fail": overall_fail,
-        "overall_rate": overall_rate,
+        "summary": {
+            "total": len(results),
+            "passed": overall_pass,
+            "failed": overall_fail,
+            "pass_rate": overall_rate,
+        },
+        "per_dimension": per_dim,
         "weakest_dimension": weakest_dim,
-        "fix_recommendation": fix_rec,
-        "dimensions": dim_data,
-        "ragas": ragas_summary,
+        "recommendation": recommendation,
+        "ragas_scores": ragas_summary,
+        "ragas_diagnosis": _ragas_diagnosis(ragas_summary),
         "error_cases": error_cases,
     }
 
@@ -198,9 +253,12 @@ def build_report(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
     )
     print(f"[report] Evaluation report saved → {output_path}")
-    print(f"[report] Overall: {overall_pass}/{len(judged)} passed ({100*overall_rate:.1f}%)")
+    print(
+        f"[report] Summary: {overall_pass}/{len(judged)} passed "
+        f"({100 * overall_rate:.1f}%)"
+    )
     print(f"[report] Weakest dimension: {weakest_dim}")
-    print(f"[report] Fix recommendation: {fix_rec[:100]}...")
+    print(f"[report] Recommendation: {recommendation[:100]}...")
 
     return report
 
