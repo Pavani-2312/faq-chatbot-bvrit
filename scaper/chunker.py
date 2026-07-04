@@ -6,10 +6,10 @@ Splits cleaned Markdown page content into ~500-700 token chunks with
 mid-sentence. Attaches metadata (source_url, page_title, category,
 scraped_at) to every chunk.
 
-Token counting uses a simple whitespace-based approximation (~1 token
-per ~0.75 words is the common rule of thumb for English text with a
-BPE tokenizer; we approximate directly in words here since exact
-tokenizer parity is not required for chunk sizing, only consistency).
+Token counting uses a simple whitespace-based approximation (~1.5 tokens
+per word for modern tokenizers like GPT-4, Claude 3, Gemini). This
+conservative estimate helps prevent oversized chunks while maintaining
+consistency.
 """
 
 from __future__ import annotations
@@ -26,28 +26,81 @@ OVERLAP_RATIO = 0.15
 
 
 def approx_token_count(text: str) -> int:
-    """Rough token estimate: ~1.3 tokens per whitespace-separated word."""
+    """Rough token estimate: ~1.5 tokens per whitespace-separated word.
+    
+    Modern tokenizers (GPT-4, Claude 3, Gemini) typically produce 1.3-1.5 tokens
+    per word for English prose. Using 1.5x provides a conservative estimate that
+    helps prevent oversized chunks.
+    """
     words = text.split()
+    return int(len(words) * 1.5)
     return int(len(words) * 1.3)
 
 
 def split_into_blocks(markdown: str) -> list[str]:
-    """Split markdown into paragraph/heading-level blocks (never mid-sentence)."""
-    # A block boundary is a blank line, or a line that starts a heading.
-    raw_blocks = re.split(r"\n\s*\n", markdown)
+    """Split markdown into paragraph/heading-level blocks (never mid-sentence).
+    
+    Preserves code blocks (fenced with ```) and tables as atomic units.
+    """
     blocks = []
-    for block in raw_blocks:
-        block = block.strip()
-        if not block:
+    current_block = []
+    in_code_block = False
+    in_table = False
+    
+    lines = markdown.split('\n')
+    
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        
+        # Track code block boundaries
+        if stripped.startswith('```'):
+            in_code_block = not in_code_block
+            current_block.append(line)
+            if not in_code_block:  # End of code block
+                blocks.append('\n'.join(current_block).strip())
+                current_block = []
             continue
-        # If a block itself contains embedded headings mid-block (rare after
-        # our extractor's newline insertion), split further on heading markers.
-        sub_parts = re.split(r"(?=^#{1,6}\s)", block, flags=re.MULTILINE)
-        for part in sub_parts:
-            part = part.strip()
-            if part:
-                blocks.append(part)
-    return blocks
+        
+        # Inside code block - accumulate everything
+        if in_code_block:
+            current_block.append(line)
+            continue
+        
+        # Track table boundaries (lines starting with |)
+        if stripped.startswith('|'):
+            if not in_table:
+                # Flush any accumulated non-table content
+                if current_block:
+                    blocks.append('\n'.join(current_block).strip())
+                    current_block = []
+                in_table = True
+            current_block.append(line)
+            continue
+        elif in_table:
+            # End of table - flush it
+            blocks.append('\n'.join(current_block).strip())
+            current_block = []
+            in_table = False
+        
+        # Regular content - split on blank lines and headings
+        if not stripped:  # Blank line
+            if current_block:
+                blocks.append('\n'.join(current_block).strip())
+                current_block = []
+        elif stripped.startswith('#'):  # Heading
+            if current_block:
+                blocks.append('\n'.join(current_block).strip())
+                current_block = []
+            current_block.append(line)
+        else:
+            current_block.append(line)
+    
+    # Flush remaining content
+    if current_block:
+        blocks.append('\n'.join(current_block).strip())
+    
+    # Filter out empty blocks
+    return [b for b in blocks if b]
 
 
 @dataclass
@@ -156,8 +209,47 @@ def _take_overlap(blocks: list[str], target_tokens: int) -> list[str]:
 
 def _split_oversized_block(block: str) -> list[str]:
     """Split an oversized single block (e.g. a huge table or long paragraph)
-    into sentence-bounded pieces near TARGET_MAX_TOKENS."""
-    sentences = re.split(r"(?<=[.!?])\s+", block)
+    into sentence-bounded pieces near TARGET_MAX_TOKENS.
+    
+    Uses a more robust sentence splitter that handles common abbreviations.
+    """
+    # Split on sentence-ending punctuation followed by space and capital letter
+    # This is more reliable than lookbehind patterns with variable width
+    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', block)
+    
+    # If no splits happened (no capital letters after periods), fall back to simpler split
+    if len(sentences) == 1 and len(block) > TARGET_MAX_TOKENS * 2:
+        sentences = re.split(r'(?<=[.!?])\s+', block)
+    
+    # Post-process to rejoin common abbreviations that got split incorrectly
+    # Common academic/professional abbreviations
+    abbreviations = ['Dr', 'Mr', 'Mrs', 'Ms', 'Prof', 'Sr', 'Jr', 'vs', 'etc', 
+                     'Inc', 'Ltd', 'Corp', 'Ph.D', 'M.D', 'B.Tech', 'M.Tech', 'St']
+    
+    cleaned_sentences = []
+    i = 0
+    while i < len(sentences):
+        current_sent = sentences[i]
+        # Check if this sentence is just an abbreviation
+        if i < len(sentences) - 1:
+            # If current sentence ends with a common abbreviation, merge with next
+            should_merge = False
+            for abbr in abbreviations:
+                if current_sent.rstrip().endswith(abbr + '.'):
+                    should_merge = True
+                    break
+            
+            if should_merge and i + 1 < len(sentences):
+                current_sent = current_sent + ' ' + sentences[i + 1]
+                i += 2
+                cleaned_sentences.append(current_sent)
+                continue
+        
+        cleaned_sentences.append(current_sent)
+        i += 1
+    
+    sentences = cleaned_sentences
+    
     pieces = []
     current = []
     current_tokens = 0

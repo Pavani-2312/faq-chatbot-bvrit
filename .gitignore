@@ -15,8 +15,11 @@ scaper/output/
 # Root-level scraped data
 scraped_data.json
 
+# Environment and secrets
+.env
+.env.local
+
 # OS / editor
 .DS_Store
-.env
 *.swp
 *.swo

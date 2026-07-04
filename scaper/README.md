@@ -1,5 +1,30 @@
 # BVRIT Hyderabad Knowledge Base Scraper
 
+## Fixes in this version
+
+- **`extractor.py`** — Removed the bare `[class*='widget']` strip selector.
+  Elementor names every content block `elementor-widget-*` (headings, text,
+  images, icon-lists — everything), so that selector was deleting almost all
+  real page content sitewide, not just sidebars. It's now scoped to actual
+  sidebar/widget-area containers only. Verified with a synthetic Elementor
+  page: headings, paragraphs, lists, and images with captions all now survive
+  extraction while nav/sidebar chrome is still correctly stripped.
+- **`crawler.py`** — Fixed the crawl stall: `IMAGE_EXTENSIONS` was defined but
+  never actually used, so `<a href="...jpg">` gallery/lightbox links (very
+  common in Elementor image widgets) were being enqueued and fetched as if
+  they were HTML pages — downloading full image binaries only to discard them
+  once the content-type check failed. On a media-heavy site like this one,
+  that can flood the frontier with thousands of wasted requests. Image URLs
+  are now filtered out at both the sitemap-seeding step and the link-discovery
+  step, since `extractor.py` already pulls every qualifying `<img>` directly
+  from each page's own HTML — there was never a need to crawl images as
+  separate "pages." The frontier was also switched from a `list` (`pop(0)` is
+  O(n)) to a `deque` (`popleft()` is O(1)) so this doesn't degrade further as
+  the frontier grows on a ~500-800 page crawl. A running count of skipped
+  image URLs is now printed at the end of the crawl and saved in
+  `crawl_state.json` as `skipped_image_links`.
+
+
 A polite, resumable crawler + extractor + chunker pipeline that turns
 [bvrithyderabad.edu.in](https://bvrithyderabad.edu.in/) (a WordPress/Elementor
 site) into a `knowledge_base.jsonl` file suitable for a RAG-based chatbot.
@@ -46,6 +71,7 @@ output/
 ├── crawl_state.json         # resumable crawl frontier/visited state
 ├── request_log.csv          # timestamp, url, status, depth, note
 ├── non_html_urls.csv        # PDFs/DOCs/etc. discovered but not fetched
+├── extraction_errors.jsonl  # pages that failed extraction (for investigation)
 └── knowledge_base.jsonl     # final output: one JSON object per line
 ```
 
@@ -96,6 +122,21 @@ python main.py --output-dir ./output --skip-images
 
 If interrupted mid-crawl, just re-run the same command — `crawl_state.json`
 lets it resume from where it left off instead of restarting.
+
+### Quick validation
+
+After extraction completes, you can run an additional validation script for
+detailed quality analysis:
+
+```bash
+python validate_kb.py ./output/knowledge_base.jsonl
+```
+
+This provides:
+- Category distribution statistics
+- Content length analysis
+- Data quality checks (missing fields, duplicates, empty content)
+- Sample chunk preview
 
 ### CLI flags
 

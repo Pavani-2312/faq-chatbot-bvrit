@@ -1,0 +1,81 @@
+URL: https://bvrithyderabad.edu.in/basic-sciences-and-humanities/laboratories-and-workshops/
+TITLE: Laboratories and Workshops – BVRIT HYDERABAD College of Engineering for Women
+
+About the Department
+About HOD
+Curriculum
+Faculty
+Laboratories
+Department Committees
+Academic Calendars
+Course Content and Outcomes
+Department Placements
+News Letter
+Activities in Teaching and Learning
+About the Department
+About HOD
+Curriculum
+Faculty
+Laboratories
+Department Committees
+Academic Calendars
+Course Content and Outcomes
+Department Placements
+News Letter
+Activities in Teaching and Learning
+BASIC SCIENCES AND HUMANITIES
+Laboratories and Workshops
+“An Engineering Laboratory Experience for Freshmen Engineering class”
+Laboratories are a vital component to learn engineering disciplines, since hands-on labs reinforce the theory that the students learned in lecture, with the development of modern technology. The Basic Sciences & Humanities Department is well equipped with laboratories of English Language and Communication Skills Lab-2, Applied Physics-2, Engineering Chemistry-2, Engineering Workshop-2, Programming for Problem Solving Lab-1, Basic Electrical Engineering Lab-1and Advanced Communication Skills Lab-1.On campus resourceful labs are provided to individual access.
+ENGLISH LANGUAGE AND COMMUNICATION SKILLS
+APPLIED PHYSICS
+ENGINEERING CHEMISTRY
+ENGINEERING WORKSHOP
+PROGRAMMING FOR PROBLEM SOLVING LABORATORY
+BASIC ELECTRICAL ENGINEERING
+ADVANCED COMMUNICATION SKILLS
+English Language and Communication Skills.
+The English Language and Communication Skills Laboratory at BVRITH is an amicable and flamboyant classroom equipped with surround sound audio setup, LCD (liquid crystal display) projectors, headphones, collar microphone, English licensed software and computers with updated system configuration for a profound learning experience, where pupil can tune their listening as well as speaking skills in foreign languages especially English.
+Laboratory serves to be an effective methodology for teaching and learning of the key skills like Listening, Speaking, Reading, Writing, Grammar and Vocabulary. It also  succors to review, compare and evaluate considering the original nature of the accents in text, audio and video formats. Language laboratories pave the way for more appropriate and easier ways of learning the language. They facilitate the role of the teacher in creating an attractive learning environment as they hold interesting presentation sessions to enhance the flair for speech and language in every student as well as to raise aloft their confidence.
+The primary objectives of the Language Laboratories are:
+To equip the learners with good communication skills and Listening skills.
+To enable the learners to participate in discussions. To expose the learners to the exact patterns of language in terms of stress, pause, intonation and grammar
+To improve the presentation and participation skills of the learners
+To prepare the learners to face the job interviews.
+Applied Physics Laboratory.
+Applied Physics Laboratory is designed to develop student’s experimental skills in engineering concepts related to Semiconductors, Optoelectronics, Lasers, Fibre Optics and Electromagnetism. In the two laboratories of Applied Physics the students will enrich their knowledge by comparing theory and correlating it with the experiments in the related areas.
+Engineering Chemistry Laboratory
+Engineering Chemistry Laboratory is a dynamic field where students enhance their knowledge in practical applications of real time through hands-on-experience. The laboratory is equipped with the state-of-the-art in complex experiments indeed. The main objective of the Engineering Chemistry Laboratory is to furnish the conceptual understanding of the basic principles involved in chemical analysis. The laboratory houses traditional equipment for chemical characterization that entails both Sample preparation and Analysis. A dedicated Engineering Chemistry Laboratory ensures safety protocol with all the necessary equipment for preparation of samples and standards for various analyses of liquid and solid samples. There are two Engineering Chemistry Laboratories which are aptly structured, neatly designed, spacious and well-ventilated and provides students with a practical approach towards the various techniques used in Engineering Application.
+Engineering Workshop.
+This Workshop practice imparts basic knowledge of various tools and use in different sections like Fitting, Tin smithy, Carpentry etc. No doubt, engineers are not going to become fitters or carpenters or skilled workers on the shop floor, but exposure to all working trades, provides them a bird’s eye view of the basic practical activities associated with all sections of the manufacturing unit. Thus they will come to know about the minimum requirements of industry in the manufacturing field.
+Programming for Problem Solving Laboratory.
+It covers working with an IDE to create, edit, compile, run and debug programs, analyzing various steps in program development, developing programs to solve basic problems by understanding basic concepts in C like operators, control statements etc, developing modular, reusable and readable C Programs using the concepts like functions, arrays etc. writing programs using the Dynamic Memory Allocation concept, create, read from and write to text and binary files.
+Course Objectives:
+To work with an IDE to create, edit, compile, run and debug programs
+To analyze the various steps in program development.
+To develop programs to solve basic problems by understanding basic concepts in C like operators, control statements etc.
+To develop modular, reusable and readable C Programs using the concepts like functions, arrays etc.
+To Write programs using the Dynamic Memory Allocation concept.
+To create, read from and write to text and binary files
+Course Outcomes:
+Build programs using control structures to solve simple mathematical problems.
+Apply the concepts of user defined, pre-defined and file handling functions.
+Develop modular, reusable and readable C Programs using the concepts like functions, arrays etc.
+Develop searching and sorting algorithms using C program
+Basic Electrical Engineering Laboratory.
+“The Basic Electrical Engineering Laboratory is designed to expose students to the practical executions of the fundamental theories of Electrical Engineering. This laboratory gives the students experimental skills about the operation of different types of electrical machines like motor, generator & transformer which enables students to carry out the experiments in an electrically safe environment. The laboratory is equipped with energy meters, power meters, voltage meters, ammeters of various sizes, various types of transformers and various types and sizes of motors. Students can be capable to design electrical systems, to analyze a given network by applying various network theorems and have exposure to the operation of DC generator, DC & AC motor & transformer.
+Advanced Communication Skills Laboratory.
+A course on
+Advanced Communication Skills
+Laboratory
+at BVRITH is considered essential at the third year level of B.Tech. At this stage, the students need to prepare themselves for their career which requires them to listen, read, speak and write in English both for their professional and interpersonal communication. The main purpose of this course is to prepare the students of Engineering for their placements.
+Course Objectives:
+This Laboratory focuses to meet the following targets:
+To improve students’ fluency in spoken English
+To enable them to listen to English spoken at normal conversational speed
+To help students develop their vocabulary
+To read and comprehend texts in different contexts
+To communicate their ideas relevantly and coherently in writing
+To make students industry-ready
+To help students acquire behavioural skills for their personal and professional life
+To respond appropriately in different socio-cultural and professional contexts

@@ -1,0 +1,17 @@
+# Core dependencies
+streamlit>=1.30.0
+openai>=1.30.0              # for OpenRouter API client (OpenAI-compatible)
+chromadb>=0.4.22
+sentence-transformers>=2.2.0  # for local embeddings (no API key needed)
+python-dotenv>=1.0.0
+
+# LangChain (for docx loading + RAGAS only, not used in chatbot runtime)
+langchain>=0.1.0
+langchain-openai>=0.0.5
+
+# Evaluation
+ragas>=0.1.0
+datasets>=2.16.0
+
+# Utilities
+python-docx>=1.1.0         # for docx ingestion

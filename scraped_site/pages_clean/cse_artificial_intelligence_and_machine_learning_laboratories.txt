@@ -1,0 +1,319 @@
+URL: https://bvrithyderabad.edu.in/cse-artificial-intelligence-and-machine-learning/laboratories/
+TITLE: Laboratories – BVRIT HYDERABAD College of Engineering for Women
+
+About the Department
+About HOD
+Curriculum
+Faculty
+Laboratories
+Milestones
+Academic Calendars
+Course Content
+Department Placements
+News Letter
+Innovations by Faculty In Teaching and Learning
+About the Department
+About HOD
+Curriculum
+Faculty
+Laboratories
+Milestones
+Academic Calendars
+Course Content
+Department Placements
+News Letter
+Innovations by Faculty In Teaching and Learning
+CSE - ARTIFICIAL INTELLIGENCE & MACHINE LEARNING
+Laboratories
+Department has 2 well equipped state of art laboratories with the latest configuration systems. Systems are connected via local area network to the Domain Server (BVRITH). Students are encouraged to engage themselves in getting practiced with laboratory experiments in their leisure hours by keeping the labs open even after the college hours.
+I Year  – I SEMESTER
+II Year  – I SEMESTER
+II Year - II Sem
+III Year - I Sem
+III Year - II Sem
+IV YEAR I SEM
+R22 Regulation  I Year  – I SEMESTER
+R22 Regulation  II Year  – I SEMESTER
+R22 Regulation  II Year  – II SEMESTER
+R22 Regulation  III Year  – I SEMESTER
+R22 Regulation  III Year  – II SEMESTER
+R22 Regulation  IV Year  – I SEMESTER
+PROGRAMMING FOR PROBLEM SOLVING LAB
+It covers working with an IDE to create, edit, compile, run and debug programs, analyzing various steps in program development, developing programs to solve basic problems by understanding basic concepts in C like operators, control statements etc, developing modular, reusable and readable C Programs using the concepts like functions, arrays etc. writing programs using the Dynamic Memory Allocation concept, create, read from and write to text and binary files.
+Course Objectives
+To work with an IDE to create, edit, compile, run and debug programs
+To analyze the various steps in program development.
+To develop programs to solve basic problems by understanding basic concepts in C like operators, control statements etc.
+To develop modular, reusable and readable C Programs using the concepts like functions, arrays etc.
+To Write programs using the Dynamic Memory Allocation concept.
+To create, read from and write to text and binary files
+Course Outcomes
+Build programs using control structures to solve simple mathematical problems.
+Apply the concepts of user defined, pre-defined and file handling functions.
+Develop modular, reusable and readable C Programs using the concepts like functions, arrays etc.
+Develop searching and sorting algorithms using C programs.
+DATA STRUCTURES LAB
+It covers various concepts of C programming language, searching and sorting algorithms, stacks and queues. It gives Ability to develop C programs for computing and real-life applications using basic elements like control statements, arrays, functions, pointers and strings, and data structures like stacks, queues and linked lists.
+Course Objectives
+It covers various concepts of C programming language
+It introduces searching and sorting algorithms
+It provides an understanding of data structures such as stacks and queues.
+Course Outcomes
+Implement various linear data structures.
+Implement various non linear data structures.
+Compare various searching and sorting algorithms.
+Ability to implement trees and graphs traversals.
+PYTHON PROGRAMMING LAB
+This lab covers core programming basics and program design with functions, Object-Oriented Programming, in-depth data and information processing techniques and high-performance programs designed to strengthen the practical expertise.
+Course Objectives
+Understand the Python installation process and run the interpreter.
+Learn control structures.
+Understand Lists, Dictionaries in python
+Handle Strings and Files in Python
+Course Outcomes
+Make use of python scripting for developing applications
+Manipulate Lists, Tuples, Sets and dictionaries
+Import built in libraries & Create libraries
+Create practical & contemporary application such as web application and data analysis
+DATABASE MANAGEMENT LAB
+A database management system (DBMS) is a
+computer software application that interacts with the user, other applications,
+and the database itself to capture and analyze data. A general-purpose DBMS is
+designed to allow the definition, creation, querying, update, and
+administration of databases. This Lab is related to DBMS theory where they use
+MySql Database. Student will have practical exposure on designing, developing
+and querying database.
+Course Objectives
+Introduce ER data model, database design and normalization
+Learn SQL basics for data definition and data manipulation
+Course Outcomes
+Formulate the queries using DML, DDL, DCL commands.
+Enforce integrity constraints on databases.
+Implement triggers, stored procedures, and cursors.
+OPERATING SYSTEMS LAB
+This Lab is related to OS theory where
+students are able to compare and contrast various CPU scheduling algorithms,
+page replacement algorithms, memory allocation and file allocation strategies.
+Course Objectives
+To provide an understanding of the design aspects of operating system concepts through simulation
+Introduce basic Unix commands, system call interface for process management, inter process communication and I/O in Unix
+Course Outcomes
+Evaluate CPU Scheduling Algorithms and Memory management techniques.
+Construct deadlock detection and avoidance algorithms
+Solve classical problems of synchronization using semaphores.
+Evaluate inter process communication mechanisms using system calls and
+pipes.
+JAVA PROGRAMMING LAB
+Java is a programming language designed for use in the distributed environment of the Internet. It enforces an object-oriented programming model. Java can be used to create complete applications that may run on a single computer or be distributed among servers and clients in a network. Java has no operating system-unique extensions or variations. Java is generally regarded as the most strategic language in which to develop applications for the Web. In this lab Students will be able to write core java programs using SDK 1.8 using Eclipse.
+Course Objectives
+To write programs using abstract classes.
+To write programs for solving real world problems using java collection
+frame work.
+To write multithreaded programs.
+To write GUI programs using swing controls in Java.
+To introduce java compiler and eclipse platform.
+To impart hands on experience with java programming.
+Course Outcomes
+Make use of JDK, Eclipse platform for developing  java programs.
+Build programs using abstract classes and multithreading concepts.
+Develop programs using GUI components.
+Develop Programs using Quick and Bubble sort
+MACHINE LEARNING LAB
+Machine learning lab is designed to experiment with machine learning models which can be trained on the datasets to acquire knowledge from the data and make predictions in future.
+Course Objectives
+The objective of this lab is to get an overview of the various machine learning techniques and can able to demonstrate them using python
+To Analyse the dataset.
+To train and test machine learning models with the data.
+To understand the different models for classification and regression problems
+Course Outcomes
+Compare Machine Learning Algorithms based on their advantages and limitations and use the best one according to the situation.
+Interpret and understand modern notions in data analysis-oriented computing
+Apply common Machine Learning algorithms in practice and implement.
+Experiment with real world data using Machine Learning algorithms
+COMPUTER NETWORK LAB
+The objective of this computer networks lab is to get practical knowledge of working principles of various communication protocols. Analyse structure and formats of TCP/IP layer protocols using network tools such as Wireshark and network simulators. Implementing various network algorithms such as error control, error detection, routing, and security related algorithms.
+Course Objectives:
+To understand the working principle of various communication protocols.
+To understand the network simulator environment and visualize a network topology and observe its performance
+To analyse the traffic flow and the contents of protocol frames
+Course Outcomes:
+Implement data link layer farming methods
+Analyse error detection and error correction codes.
+Implement and analyse routing and congestion issues in network design.
+Implement Encoding and Decoding techniques used in presentation layer
+To be able to work with different network tools
+ARTIFICIAL INTELLIGENCE AND NATURAL LANGUAGE PROCESSING LAB
+The objective of AI&NLP lab is to understand how to apply the AI principles for problem solving using PROLOG.  It also emphasises on training and evaluating natural languages models.
+Course Objectives:
+Become familiar with basic principles of AI toward problem solving, knowledge representation and learning.
+Knowledge on basic Language processing features, design an innovative application using NLP components
+Course Outcomes:
+Apply basic principles of AI in solutions that require problem solving, knowledge representation, and learning.
+Show sensitivity to linguistic phenomena and an ability to model them with formal grammars.
+Understand and carry out proper experimental methodology for training and evaluating empirical NLP systems
+Able to design, implement, and analyze NLP algorithms
+DEVOPS LAB
+Course Objectives:
+Describe the agile relationship between development and IT operations.
+Understand the skill sets and high-functioning teams involved in
+DevOps and related methods to reach a continuous delivery capability
+Implement automated system update and DevOps lifecycle
+Course Outcomes:
+Identify components of Devops environment
+Apply different project management, integration, testing and code deployment tool
+Investigate different DevOps Software development, models
+Demonstrate continuous integration and development using Jenkins.
+DEEP LEARNING LAB
+Course Objectives:
+To Build the Foundation of Deep Learning.
+To Understand How to Build the Neural Network.
+To enable students to develop successful machine learning concepts.
+Course Outcomes:
+Learn the Fundamental Principles of Deep Learning.
+Identify the Deep Learning Algorithms for Various Types of Learning Tasks in various domains.
+Implement Deep Learning Algorithms and Solve Real-world problems.
+PROGRAMMING FOR PROBLEM SOLVING LAB
+It covers working with an IDE to create, edit, compile, run and debug programs, analyzing various steps in program development, developing programs to solve basic problems by understanding basic concepts in C like operators, control statements etc, developing modular, reusable and readable C Programs using the concepts like functions, arrays etc. writing programs using the Dynamic Memory Allocation concept, create, read from and write to text and binary files.
+Course Objectives
+To work with an IDE to create, edit, compile, run and debug programs
+To analyze the various steps in program development.
+To develop programs to solve basic problems by understanding basic concepts in C like operators, control statements etc.
+To develop modular, reusable and readable C Programs using the concepts like functions, arrays etc.
+To Write programs using the Dynamic Memory Allocation concept.
+To create, read from and write to text and binary files
+Course Outcomes
+Build programs using control structures to solve simple mathematical problems.
+Apply the concepts of user defined, pre-defined and file handling functions.
+Develop modular, reusable and readable C Programs using the concepts like functions, arrays etc.
+Develop searching and sorting algorithms using C programs.
+PYTHON PROGRAMMING LAB
+This lab covers core programming basics and program design with functions, Object-Oriented Programming, in-depth data and information processing techniques and high-performance programs designed to strengthen the practical expertise.
+Course Objectives
+Understand the Python installation process and run the interpreter.
+Learn control structures.
+Understand Lists, Dictionaries in python
+Handle Strings and Files in Python
+Course Outcomes
+Make use of python scripting for developing applications
+Manipulate Lists, Tuples, Sets and dictionaries
+Import built in libraries & Create libraries
+Create practical & contemporary application such as web application and data analysis
+DATA STRUCTURES LAB
+It covers various concepts of C programming language, searching and sorting algorithms, stacks and queues. It gives Ability to develop C programs for computing and real-life applications using basic elements like control statements, arrays, functions, pointers and strings, and data structures like stacks, queues and linked lists.
+Course Objectives
+It covers various concepts of C programming language
+It introduces searching and sorting algorithms
+It provides an understanding of data structures such as stacks and queues.
+Course Outcomes
+Implement various linear data structures.
+Implement various non linear data structures.
+Compare various searching and sorting algorithms.
+Ability to implement trees and graphs traversals.
+OPERATING SYSTEMS LAB
+This Lab is related to OS theory where students are able to compare and contrast various CPU scheduling algorithms, page replacement algorithms, memory allocation and file allocation strategies.
+Course Objectives
+To provide an understanding of the design aspects of operating system concepts through simulation
+Introduce basic Unix commands, system call interface for process management, inter process communication and I/O in Unix
+Course Outcomes
+Evaluate CPU Scheduling Algorithms and Memory management techniques.
+Construct deadlock detection and avoidance algorithms.
+Solve classical problems of synchronization using semaphores.
+Evaluate inter process communication mechanisms using system calls and pipes.
+SOFTWARE ENGINEERING LAB
+Course Objectives:
+To have hands on experience in developing a software project by using various software engineering principles and methods in each of the phases of software development.
+Course Outcomes:
+Ability to translate end-user requirements into system and software requirements
+Ability to generate a high-level design of the system from the software requirements
+Will have experience and/or awareness of testing problems and will be able to develop a simple
+testing report
+NODE JS/ REACT JS/ DJANGO
+Course Objectives:
+To implement the static web pages using HTML and do client side validation using JavaScript.
+To design and work with databases using Java
+To develop an end to end application using java full stack.
+To introduce Node JS implementation for server side programming.
+To experiment with single page application development using React.
+Course Outcomes:
+Build a custom website with HTML, CSS, and Bootstrap and little JavaScript.
+Demonstrate Advanced features of JavaScript and learn about JDBC
+Develop Server – side implementation using Java technologies like
+Develop the server – side implementation using Node JS.
+Design a Single Page Application using React
+DATABASE MANAGEMENT LAB
+A database management system (DBMS) is a computer software application that interacts with the user, other applications, and the database itself to capture and analyze data. A general-purpose DBMS is designed to allow the definition, creation, querying, update, and administration of databases. This Lab is related to DBMS theory where they use MySql Database. Student will have practical exposure on designing, developing and querying database.
+Course Objectives
+Introduce ER data model, database design and normalization
+Learn SQL basics for data definition and data manipulation
+Course Outcomes
+Formulate the queries using DML, DDL, DCL commands.
+Enforce integrity constraints on databases.
+Implement triggers, stored procedures and cursors.
+JAVA PROGRAMMING LAB
+Java is a programming language designed for use in the distributed environment of the Internet. It enforces an object-oriented programming model. Java can be used to create complete applications that may run on a single computer or be distributed among servers and clients in a network. Java has no operating system-unique extensions or variations. Java is generally regarded as the most strategic language in which to develop applications for the Web. In this lab Students will be able to write core java programs using SDK 1.8 using Eclipse.
+Course Objectives
+To write programs using abstract classes.
+To write programs for solving real world problems using java collection frame work.
+To write multithreaded programs.
+To write GUI programs using swing controls in Java.
+To introduce java compiler and eclipse platform.
+To impart hands on experience with java programming.
+Course Outcomes
+Make use of JDK, Eclipse platform for developing  java programs.
+Build programs using abstract classes and multithreading concepts.
+Develop programs using GUI components.
+Develop Programs using Quick Sort and Bubble Sort
+MACHINE LEARNING LAB
+Machine learning lab is designed to experiment with machine learning models which can be trained on the datasets to acquire knowledge from the data and make predictions in future.
+Course Objectives
+The objective of this lab is to get an overview of the various machine learning techniques and can able to demonstrate them using python
+To Analyse the dataset.
+To train and test machine learning models with the data.
+To understand the different models for classification and regression problems
+Course Outcomes
+Compare Machine Learning Algorithms based on their advantages and limitations and use the best one according to the situation.
+Interpret and understand modern notions in data analysis-oriented computing
+Apply common Machine Learning algorithms in practice and implement.
+Experiment with real world data using Machine Learning algorithms
+COMPUTER NETWORK LAB
+The objective of this computer networks lab is to get practical knowledge of working principles of various communication protocols. Analyse structure and formats of TCP/IP layer protocols using network tools such as Wireshark and network simulators. Implementing various network algorithms such as error control, error detection, routing, and security related algorithms.
+Course Objectives:
+To understand the working principle of various communication protocols.
+To understand the network simulator environment and visualize a network topology and observe its performance
+To analyse the traffic flow and the contents of protocol frames
+Course Outcomes:
+Implement data link layer farming methods
+Analyse error detection and error correction codes.
+Implement and analyse routing and congestion issues in network design.
+Implement Encoding and Decoding techniques used in presentation layer
+To be able to work with different network tools
+ARTIFICIAL INTELLIGENCE AND NATURAL LANGUAGE PROCESSING LAB
+The objective of AI&NLP lab is to understand how to apply the AI principles for problem solving using PROLOG.  It also emphasises on training and evaluating natural languages models.
+Course Objectives:
+Become familiar with basic principles of AI toward problem solving, knowledge representation and learning.
+Knowledge on basic Language processing features, design an innovative application using NLP components
+Course Outcomes:
+Apply basic principles of AI in solutions that require problem solving, knowledge representation, and learning.
+Show sensitivity to linguistic phenomena and an ability to model them with formal grammars.
+Understand and carry out proper experimental methodology for training and evaluating empirical NLP systems
+Able to design, implement, and analyze NLP algorithms
+DEVOPS LAB
+Course Objectives:
+Describe the agile relationship between development and IT operations.
+Understand the skill sets and high-functioning teams involved in
+DevOps and related methods to reach a continuous delivery capability
+Implement automated system update and DevOps lifecycle
+Course Outcomes:
+Identify components of Devops environment
+Apply different project management, integration, testing and code deployment tool
+Investigate different DevOps Software development, models
+Demonstrate continuous integration and development using Jenkins.
+DEEP LEARNING LAB
+Course Objectives:
+To Build the Foundation of Deep Learning.
+To Understand How to Build the Neural Network.
+To enable students to develop successful machine learning concepts.
+Course Outcomes:
+Learn the Fundamental Principles of Deep Learning.
+Identify the Deep Learning Algorithms for Various Types of Learning Tasks in various domains.
+Implement Deep Learning Algorithms and Solve Real-world problems.

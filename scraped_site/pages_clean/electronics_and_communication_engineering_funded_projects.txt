@@ -1,0 +1,104 @@
+URL: https://bvrithyderabad.edu.in/electronics-and-communication-engineering/funded-projects/
+TITLE: Funded Projects – BVRIT HYDERABAD College of Engineering for Women
+
+About the Department
+About HOD
+Faculty
+Milestones
+Laboratories
+Curriculum
+Course Content
+Course Outcomes
+BH23 Course Outcomes
+R22 Course Outcomes
+R18 Course Outcomes
+Academic Calendars
+Funded Projects
+Patents
+Department Placements
+Start – Ups
+Faculty Innovations In Teaching And Learning
+News Letters
+About the Department
+About HOD
+Faculty
+Milestones
+Laboratories
+Curriculum
+Course Content
+Course Outcomes
+BH23 Course Outcomes
+R22 Course Outcomes
+R18 Course Outcomes
+Academic Calendars
+Funded Projects
+Patents
+Department Placements
+Start – Ups
+Faculty Innovations In Teaching And Learning
+News Letters
+ELECTRONICS AND COMMUNICATION ENGINEERING
+Funded Projects
+Funded Projects
+AI for Earth - Precision Agriculture
+PI & CO-PI: Dr. K V N Sunitha, Dr Aruna Rao S L, Dr J Naga Vishnu Vardhan
+Funding Agency: Microsoft
+File. No: A14E-2262-R5G9-21100412
+Month and Year: Oct 2021
+Amount: 10000 USD Azure Credits
+A feasibility study and Hardware frame work for Photoplethsymogram based Non-Invasive Blood Parameter monitoring system using near Infrared spectroscopy and Machine Learning Techniques
+PI & CO-PI: Dr. Swathi Reddy
+Funding Agency: DST – SERB
+File. No: SRG/2019/002299
+Month and Year: Jan 2020
+Amount: 18.3 Lakh
+Preclinical Investigation and Design of Real Time Fetal Monitoring Device using Non-Invasive method
+PI & CO-PI: Ms. Radha Abburi
+Funding Agency: TEQIP – III, JNTUH
+File. No: JNTUH/TEQIP-III/CRS/2019/ECE/06
+Month and Year: July 2019
+Amount: 2.99 Lakh
+Medicine Recognition System and Alerting Device for Geriatrics and Visually Challenged
+PI & CO-PI: Dr. K V N Sunitha, Dr Aruna Rao S L, Dr J Naga Vishnu Vardhan
+Funding Agency: DST – TIDE
+File. No: SEED/TIDE/ 043/2013
+Month and Year: July 2015
+Amount: 38.57 Lakh
+I Sprayer
+Student & Mentor Names: Ms. M Jagruthi, Mr N M Sai Krishna, Mr R Priyakanth
+Funding Agency: TiHAN, IIT Hyderabad
+File. No: TiHAN-IITH/03/2023-24/435
+Month and Year: Mar 2024
+Amount: 3 Lakh
+Gait Revive - Beyond the Walk
+Student & Mentor Names: Ms. Sehaba Bhanu Shaik, Ms. Hema Sree, Mr N M Sai Krishna, Mr R Priyakanth
+Funding Agency: IITI Drishti CPS Foundation
+File. No: DRISHTI CPS/CF/SL/UG/2023/0000011
+Month and Year: Oct 2023
+Amount: 1 Lakh
+Infant Cry Detector
+Student & Mentor Names: Ms Bhuvika, Mr N M Sai Krishna, Mr R Priyakanth
+Funding Agency: TSIC
+Month and Year: April 2022
+Amount: 2 Lakh
+Fluido Capteur
+Student & Mentor Names: Ms Bhuvika, Mr N M Sai Krishna, Mr R Priyakanth
+Funding Agency: AICTE & MoE, Govt. of India
+File. No: STDC/MIC/GRANT/215/2021-22/38
+Month and Year: March 2022
+Amount: 2.95 Lakh
+Diagnosis of Abnormal Walking Patterns using Deep Learning
+File. No: TD / PMAC Meeting / IPR-2024
+Student(s): Ms. J Hemasree
+Mentors: Mr R Priyakanth and Mr N M Sai Krishna
+Funded Amount: Rs. 12.5 Lakh
+Sight Scribe- Revolutionizing Transcribing for the Visually Impaired
+File. No: 17(2)/MSME/ Innovative/PMAC/2023-24
+Student(s) : Ms. C Srinika Sharma, Ms. K Deepika, Ms. P Indu, Ms. K Chandra Hasini
+Mentors: Mr R Priyakanth and Mr N M Sai Krishna
+Funded Amount: Rs. 15 Lakh
+Suraksha - Safety device for workers in Mining Industry
+File. No: 6(19)/Sanctionton CNA/Incubation to 2022-23 Dated:08-08-2023
+Student(s): Ms. Y Grahya, Ms. D. Vignya Reddy, Ms. B. Pravali, Ms. K. Deepika
+Mentors: Mr R Priyakanth and Mr N M Sai Krishna
+Funded Amount: Rs. 15 Lakh

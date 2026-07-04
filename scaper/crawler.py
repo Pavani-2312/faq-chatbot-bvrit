@@ -24,6 +24,7 @@ import random
 import re
 import time
 import urllib.robotparser as robotparser
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -114,9 +115,10 @@ class CrawlState:
     """Resumable crawl state, persisted to disk as JSON."""
     visited: set = field(default_factory=set)
     queued: set = field(default_factory=set)
-    frontier: list = field(default_factory=list)  # list of (url, depth)
+    frontier: deque = field(default_factory=deque)  # deque of (url, depth)
     non_html_log: set = field(default_factory=set)
     depth_map: dict = field(default_factory=dict)
+    skipped_image_links: int = 0
 
     @classmethod
     def load(cls, path: Path) -> "CrawlState":
@@ -125,12 +127,13 @@ class CrawlState:
             state = cls(
                 visited=set(data.get("visited", [])),
                 queued=set(data.get("queued", [])),
-                frontier=[tuple(item) for item in data.get("frontier", [])],
+                frontier=deque(tuple(item) for item in data.get("frontier", [])),
                 non_html_log=set(data.get("non_html_log", [])),
                 depth_map=data.get("depth_map", {}),
+                skipped_image_links=data.get("skipped_image_links", 0),
             )
             return state
-        return cls()
+        return cls(frontier=deque())
 
     def save(self, path: Path) -> None:
         data = {
@@ -139,6 +142,7 @@ class CrawlState:
             "frontier": [list(item) for item in self.frontier],
             "non_html_log": sorted(self.non_html_log),
             "depth_map": self.depth_map,
+            "skipped_image_links": self.skipped_image_links,
         }
         path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -233,32 +237,44 @@ class Crawler:
         candidates = ["/sitemap.xml", "/sitemap_index.xml"]
         found_urls: list[str] = []
         seen_sitemaps: set[str] = set()
+        
+        print("[info] Discovering sitemaps...")
 
         def fetch_sitemap(sm_url: str, depth: int = 0) -> None:
             if sm_url in seen_sitemaps or depth > 2:
                 return
             seen_sitemaps.add(sm_url)
+            print(f"[info] Fetching sitemap: {sm_url} (depth {depth})")
             try:
-                resp = self.session.get(sm_url, timeout=15)
+                resp = self.session.get(sm_url, timeout=(5, 15))
                 if resp.status_code != 200:
+                    print(f"[warn] Sitemap {sm_url} returned status {resp.status_code}")
                     return
-            except requests.RequestException:
+            except requests.RequestException as e:
+                print(f"[warn] Failed to fetch sitemap {sm_url}: {e}")
                 return
             soup = BeautifulSoup(resp.content, "xml")
             # sitemap index -> nested sitemaps
-            for sitemap_tag in soup.find_all("sitemap"):
+            nested_sitemaps = soup.find_all("sitemap")
+            if nested_sitemaps:
+                print(f"[info] Found {len(nested_sitemaps)} nested sitemap(s) in {sm_url}")
+            for sitemap_tag in nested_sitemaps:
                 loc = sitemap_tag.find("loc")
                 if loc and loc.text:
                     fetch_sitemap(loc.text.strip(), depth + 1)
             # urlset -> actual page urls
-            for url_tag in soup.find_all("url"):
+            url_entries = soup.find_all("url")
+            if url_entries:
+                print(f"[info] Found {len(url_entries)} URL(s) in {sm_url}")
+            for url_tag in url_entries:
                 loc = url_tag.find("loc")
                 if loc and loc.text:
                     found_urls.append(loc.text.strip())
 
         for path in candidates:
             fetch_sitemap(urljoin(SEED_URL, path))
-
+        
+        print(f"[info] Sitemap discovery complete: {len(found_urls)} total URLs found")
         return found_urls
 
     # ---------------------------------------------------------------
@@ -267,18 +283,51 @@ class Crawler:
     def fetch(self, url: str) -> Optional[requests.Response]:
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                resp = self.session.get(url, timeout=20, allow_redirects=True)
+                # (connect_timeout, read_timeout) - prevents hanging on slow servers
+                resp = self.session.get(url, timeout=(10, 20), allow_redirects=True)
                 if resp.status_code == 200:
                     return resp
+                
+                # Retryable server errors (temporary)
                 if resp.status_code in (429, 500, 502, 503, 504):
                     backoff = BASE_BACKOFF ** attempt + random.uniform(0, 0.5)
+                    print(f"[retry] {url} returned {resp.status_code}, retrying in {backoff:.1f}s (attempt {attempt}/{MAX_RETRIES})")
                     time.sleep(backoff)
                     continue
-                # 404, 403, etc. - no point retrying
+                
+                # Client errors (4xx) - no point retrying
+                # 404 = not found, 403 = forbidden, 400 = bad request, 401 = unauthorized
+                if 400 <= resp.status_code < 500:
+                    print(f"[skip] {url} returned {resp.status_code} (client error, not retrying)")
+                    return resp
+                
+                # Other status codes - return as-is
                 return resp
-            except requests.RequestException:
+                
+            except requests.exceptions.ConnectionError as e:
+                # Network issues - retryable
                 backoff = BASE_BACKOFF ** attempt + random.uniform(0, 0.5)
+                print(f"[retry] Connection error for {url}: {e} (attempt {attempt}/{MAX_RETRIES})")
                 time.sleep(backoff)
+                
+            except requests.exceptions.Timeout as e:
+                # Timeout - retryable
+                backoff = BASE_BACKOFF ** attempt + random.uniform(0, 0.5)
+                print(f"[retry] Timeout for {url}: {e} (attempt {attempt}/{MAX_RETRIES})")
+                time.sleep(backoff)
+                
+            except requests.exceptions.TooManyRedirects as e:
+                # Too many redirects - not retryable
+                print(f"[skip] Too many redirects for {url}: {e} (not retrying)")
+                return None
+                
+            except requests.exceptions.RequestException as e:
+                # Generic request exception - retryable as last resort
+                backoff = BASE_BACKOFF ** attempt + random.uniform(0, 0.5)
+                print(f"[retry] Request error for {url}: {e} (attempt {attempt}/{MAX_RETRIES})")
+                time.sleep(backoff)
+                
+        print(f"[fail] {url} failed after {MAX_RETRIES} attempts")
         return None
 
     def polite_delay(self) -> None:
@@ -312,11 +361,21 @@ class Crawler:
 
             sitemap_urls = self.discover_sitemap_urls()
             print(f"[info] discovered {len(sitemap_urls)} URLs from sitemap(s)")
+            skipped = 0
             for u in sitemap_urls:
                 nu = normalize_url(u)
+                if get_extension(nu) in IMAGE_EXTENSIONS:
+                    # image/media-library URLs sometimes appear in WP media
+                    # sitemaps; these are handled by extractor.py from within
+                    # page HTML, never as crawl targets in their own right.
+                    skipped += 1
+                    continue
                 if is_in_scope(nu) and nu not in self.state.queued:
                     self.state.frontier.append((nu, 1))
                     self.state.queued.add(nu)
+            if skipped:
+                self.state.skipped_image_links += skipped
+                print(f"[info] skipped {skipped} image URLs found in sitemap(s)")
 
         saved_files: list[Path] = []
 
@@ -325,7 +384,7 @@ class Crawler:
                 # take a batch up to concurrency size
                 batch = []
                 while self.state.frontier and len(batch) < self.concurrency:
-                    url, depth = self.state.frontier.pop(0)
+                    url, depth = self.state.frontier.popleft()
                     if url in self.state.visited:
                         continue
                     if depth > self.max_depth:
@@ -382,8 +441,20 @@ class Crawler:
                                 and not is_excluded_path(nlink)
                             ):
                                 ext = get_extension(nlink)
+                                if ext in IMAGE_EXTENSIONS:
+                                    # <a href="...jpg"> lightbox/gallery links are
+                                    # extremely common in Elementor image widgets.
+                                    # These are never real pages to crawl - the
+                                    # extractor already pulls every qualifying
+                                    # <img> straight out of each page's own HTML,
+                                    # so fetching these as "pages" only wastes
+                                    # bandwidth/time and stalls the frontier.
+                                    self.state.queued.add(nlink)
+                                    self.state.skipped_image_links += 1
+                                    continue
                                 if ext in NON_HTML_EXTENSIONS:
                                     self._log_non_html(nlink, discovered_on=url)
+                                    self.state.queued.add(nlink)
                                     continue
                                 self.state.frontier.append((nlink, depth + 1))
                                 self.state.queued.add(nlink)
@@ -394,7 +465,10 @@ class Crawler:
                 self.polite_delay()
 
         self.state.save(self.state_path)
-        print(f"[info] crawl complete. pages visited: {len(self.state.visited)}")
+        print(
+            f"[info] crawl complete. pages visited: {len(self.state.visited)} | "
+            f"image URLs kept out of page frontier: {self.state.skipped_image_links}"
+        )
         return saved_files
 
     def _process_url(self, url: str, depth: int):

@@ -1,0 +1,68 @@
+URL: https://bvrithyderabad.edu.in/electrical-and-electronics-engineering/laboratories/
+TITLE: Laboratories – BVRIT HYDERABAD College of Engineering for Women
+
+About the department
+About HOD
+Curriculum
+Faculty
+Laboratories
+Milestones
+Academic Calendars
+Course Content
+Department Placements
+Patents
+Publications
+Faculty Innovations In Teaching And Learning
+Newsletter
+About the department
+About HOD
+Curriculum
+Faculty
+Laboratories
+Milestones
+Academic Calendars
+Course Content
+Department Placements
+Patents
+Publications
+Faculty Innovations In Teaching And Learning
+Newsletter
+ELECTRICAL AND ELECTRONICS ENGINEERING
+Laboratories
+BEE Lab
+CS Lab
+EED Lab
+EM Lab-I
+EM Lab-II
+PS Lab
+EM&I Lab
+PE Lab
+EC Lab
+ES Lab
+Projects Lab
+Vishnu Vehicle Design Lab
+Basic Electrical Engineering Lab (BEE Lab):
+The Basic Electrical Engineering is designed to expose students to the practical executions of the fundamental theories of electrical engineering. This lab gives the students experimental skills about the operation of different types of electrical machines like motor, generator & transformer which enables students to carry out the experiments in an electrically safe environment. The lab is equipped with energy meters, power meters, voltage meters, ammeters and, transformer and motors of various sizes and types. Students will be capable of designing electrical system, analyzing a given network by applying various network theorems. The labs also introduce students to the operation of DC generator, DC & AC motor & Transformer.
+Control Systems Lab (CS Lab):
+The Control systems laboratory is designed for the EEE students who are in the 2nd semester of their 2
+nd
+year. This lab deals with experiments related to the concepts of control systems which they learn in the theory. The lab is designed in such a way that it acts as a test bed for students to learn and practice the fundamental concepts of control systems. Both hardware and simulation experiments are included in the syllabus. The various hardware experiments help the students to analyse the effect of feedback and the effect of PID controllers in the controlling action. The characteristics of various motors used in control systems can be studied here. The time response of a second order system can be analysed, both by using hardware and software. The various software experiments help to give a deep understanding of the stability concepts of any system.
+Electrical & Electronics Design Lab (EED Lab) :
+Electrical Workshop serves as learning and troubleshooting platform for students to enhance their practical knowledge related to Electrical Machines, Electronics Circuits & Switch Gear. In this lab students will learn the difference between theoretical & practical aspects, get awareness on market survey of equipment and learn to troubleshoot the circuits.
+Electrical Machines-1 Lab (EM Lab-I):
+The Electrical machines-1 Lab imparts basic visual and practical knowledge of various DC Machines. The lab mainly contains DC type Generators, Motors and Rectifier, where the students can practically perform various tests to analyze the behavior of the machines at various loading conditions. This helps the students to develop in depth knowledge on various DC machines.
+Electrical Machines- II Lab (EM Lab-II)
+The Electrical Machines-II lab imparts basic Visual & Practical knowledge of Various AC Machines. The lab contains AC machines like 1-Phase and 3- Phase transformers, Induction Motors and Synchronous Generators, where the students can practically perform various tests on these machines to analyze the behavior of all machines at various loading conditions. This helps the students to develop in depth knowledge on various AC machines.
+Power Systems Lab (PS Lab):
+Power Systems Laboratory allows electrical engineering students to study electrical power systems through lab experiments and system simulation while also supplementing the electric power systems theory that is taught in the classes such as “Power Systems” and “Microprocessors”. Through the experiments and hands-on learning processing, students can directly measure the characteristics of fundamental components used in electric power engineering and study the operation of electric power systems. The laboratory contains the  hardware and software used by industry professionals in the creation and maintenance of power systems giving students the opportunity to develop the skills and experience that will aid them in the work field. The lab comes equipped with all the fundamental equipment needed for experiments involving electric power systems. The equipment available to students in the lab includes fundamental devices of electric power systems, such as transformers, electrical machines, power passive components and measuring instruments, such as  power supplies, digital multimeters, laser tachometers.
+Electrical Measurements and Instrumentation Lab (EM&I Lab):
+Nowadays Electrical energy plays an important role in our day to day life. In a power system the load changes are very imminent, so according to load the quantity of power supply should change from time to time. The significance of Electrical Measurements and Instrumentation Lab is renowned in the various fields of engineering applications. For an Electrical Engineer, it is obligatory to have the practical ideas about the Electrical Measurements. Electrical measurements deal with the measurement of stability and working standards of the meter, this includes the knowledge of utilization and control o electrical energy. This lab is equipped with the  prominent equipments such as Energy meter, Power Factor meter , AC and DC Bridges, Current Transformer, Potential Transformer and various Instrumentation devices such as Strain Gauge, LVDT and Capacitive pick-up transducers etc.
+Power Electronics Lab:
+The power electronics lab enhances the EEE students by providing them the better understanding of the concepts and working of power electronics circuits and power semiconductor devices. This lab gives the students experimental skills about the operation of different types of converters like rectifiers, AC voltage controllers, inverters, Cyclo converters and choppers. The lab also gives an emphasis on how to model and simulate the different power electronic circuits and make the students capable of designing their own power electronic circuit. Power Electronics lab majorly has the equipment like Digital Storage Oscilloscope (DSO) and different converter configurations for industrial drive applications.
+Electric Circuits Lab
+At Electric Circuits Laboratory, students get equipped with the basic connections of circuits with aid of the components provided in the lab. They will be able to learn and verify working with different combinations of the circuit elements along with their analysis. Additionally, learner gets trained on operating various measuring devices during the process of analyzation of the circuits. Moreover, students gain hands-on experience on estimation of Electro-magnetic parameters. Overall, this laboratory plays key role in the under-graduate students’ career and touches fundamental concepts of engineering.
+Electrical Simulation Lab:
+Simulation laboratory is established with the aim to nurture our students in computational and coding skills. Students learn to model various electrical systems and verify their performance using strong computational tools like MATLAB, ngSpice, etc. The lab is equipped with a sufficient number of systems and is regularly maintained. Simulation lab also provides a great practicing platform for coding and other pieces of training needed for the placement season.
+Projects Lab:
+The Project laboratory of the EEE department provides the opportunity for the students to gain practical   knowledge where they develop prototypes by using engineering fundamentals. The prototypes developed can be utilized in project presentation activities like project expos, national/international level competitions like SIH, TIIC etc. It is also useful for publishing papers in conferences, journal papers, and research activities.
+The Vishnu Vehicle Design Lab (VVDL) offers practical training in the design and development of electric and hybrid vehicles like E-Karts, Hybrid Scooters, and Electric Bicycles. Students work on component design, assembly, and system integration using tools such as ANSYS, MATLAB/Simulink, and Fusion 360. The lab supports chassis, suspension, brake, and drivetrain analysis along with embedded control using Arduino and Raspberry Pi. With facilities for fabrication and testing, VVDL enables students to build functional prototypes, participate in competitions, and gain industry-relevant skills for electric mobility and sustainable vehicle design.
