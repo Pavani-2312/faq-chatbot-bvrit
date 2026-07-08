@@ -55,19 +55,20 @@ EMBEDDING_PROVIDER = "local"
 
 # ---------------------------------------------------------------------------
 # Chunking (used by ingest.py — kept here for reference / UI display)
-# Rationale: 800 chars (~150-200 words) keeps one sub-topic per chunk without
-# splitting facts; 120-char overlap prevents losing context at boundaries.
+# Rationale: 1200 chars (~250-300 words) keeps full paragraphs and tables
+# together without splitting facts; 150-char overlap prevents losing
+# context at boundaries.
 # ---------------------------------------------------------------------------
-CHUNK_SIZE = 800           # target characters per chunk
-CHUNK_OVERLAP = 120        # ~15% overlap to preserve cross-boundary context
-CHUNK_SIZE_TOKENS = 200    # approximate token count (1 token ≈ 4 chars)
-CHUNK_OVERLAP_TOKENS = 30
+CHUNK_SIZE = 1200          # target characters per chunk
+CHUNK_OVERLAP = 150        # ~12.5% overlap to preserve cross-boundary context
+CHUNK_SIZE_TOKENS = 300    # approximate token count (1 token ≈ 4 chars)
+CHUNK_OVERLAP_TOKENS = 38
 
 # ---------------------------------------------------------------------------
 # Retrieval
 # ---------------------------------------------------------------------------
-TOP_K = 5                  # default number of chunks returned per query
-TOP_K_MAX = 10             # upper bound for sidebar slider
+TOP_K = 15                 # default number of chunks returned per query
+TOP_K_MAX = 30             # upper bound for sidebar slider
 
 # ---------------------------------------------------------------------------
 # Generation — all LLM calls go through OpenRouter
@@ -138,11 +139,15 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 INJECTION_PATTERNS = [
     "ignore previous instructions",
     "ignore all instructions",
+    "ignore all previous",
+    "ignore the above",
     "reveal your system prompt",
     "print your prompt",
     "show me your prompt",
+    "show me your system",
     "you are now",
     "forget you are",
+    "forget that you are",
     "act as",
     "disregard",
     "bypass",
@@ -150,7 +155,20 @@ INJECTION_PATTERNS = [
     "list all documents",
     "what are your instructions",
     "override your",
+    "new persona",
+    "new role",
+    "pretend you are",
+    "you have no restrictions",
+    "jailbreak",
+    "do anything now",
+    "dan mode",
 ]
+
+# ---------------------------------------------------------------------------
+# Input validation
+# ---------------------------------------------------------------------------
+MAX_INPUT_LENGTH = 2000          # characters — reject longer inputs (D05-Robustness)
+MIN_MEANINGFUL_LENGTH = 2        # minimum chars for a non-empty input check
 
 # ---------------------------------------------------------------------------
 # UI constants
