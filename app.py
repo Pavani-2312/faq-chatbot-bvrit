@@ -6,7 +6,8 @@ Streamlit UI for the BVRIT FAQ Chatbot.
 Two tabs (per build brief §4 and Architecture.md §11):
 
   🎓 Chat       — conversational interface with citations, refusal badges,
-                  conflict flags, injection-blocked alerts
+                  conflict flags, injection-blocked alerts, tool call display,
+                  threshold alert warnings
 
   📊 Dashboard  — full evaluation report:
                   summary stats, 4×2 dimension cards with pass/fail,
@@ -16,8 +17,9 @@ Two tabs (per build brief §4 and Architecture.md §11):
 Sidebar:
   - Knowledge base status (doc name, chunk count, index status)
   - Retrieval settings (top-k slider, section filter)
+  - Session Stats panel with st.metric() + delta indicators (observability)
   - RAGAS score bars (from last evaluation report)
-  - Per-query latency
+  - Memory status (turn count, summary info)
 
 Run: streamlit run app.py
 """
@@ -43,6 +45,7 @@ from config import (
     CONFLICT_BADGE,
     EVAL_REPORT_PATH,
     FALLBACK_CONTACT,
+    GENERATION_MODEL,
     REFUSED_BADGE,
     TOP_K,
     TOP_K_MAX,
@@ -52,8 +55,14 @@ from config import (
     RAGAS_CONTEXT_RECALL_TARGET,
 )
 from chatbot import BVRITChatbot
-from memory import ConversationMemory
+from memory import ConversationMemory, update_profile_from_conversation
 from retriever import retriever
+from observability import (
+    get_call_log,
+    compute_session_stats,
+    check_alerts,
+    clear_call_log,
+)
 
 # ---------------------------------------------------------------------------
 # Page setup
@@ -83,13 +92,26 @@ if "retriever_error" not in st.session_state:
 if "sections" not in st.session_state:
     st.session_state.sections = []
 
+# Observability: persist stats across reruns in session state
+if "prev_stats" not in st.session_state:
+    st.session_state.prev_stats = None
+
+# Store last response for alert display
+if "last_response" not in st.session_state:
+    st.session_state.last_response = None
+
+if "last_alert" not in st.session_state:
+    st.session_state.last_alert = None
+
 
 # ---------------------------------------------------------------------------
-# Load retriever once (cached at session level)
+# Image rendering helper
 # ---------------------------------------------------------------------------
 import re as _re
+
 _IMAGE_MD = _re.compile(r'!\[([^\]]*)\]\(([^)]+)\)')
 _IMAGES_ROOT = Path(__file__).resolve().parent / "scaper" / "output" / "images"
+
 
 def _render_answer(answer: str) -> None:
     """
@@ -118,6 +140,9 @@ def _render_answer(answer: str) -> None:
                 st.markdown(f"_(Image not found: {rel})_")
 
 
+# ---------------------------------------------------------------------------
+# Load retriever once (cached at session level)
+# ---------------------------------------------------------------------------
 def load_retriever_once() -> None:
     if st.session_state.retriever_loaded:
         return
@@ -194,11 +219,85 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # --- Session Stats (Observability) ---
+    st.subheader("📊 Session Stats")
+    call_log = get_call_log()
+    stats = compute_session_stats(call_log)
+    prev = st.session_state.prev_stats
+
+    # Build delta helpers
+    def _delta(curr, prev_val, fmt="{:.2f}"):
+        if prev_val is None:
+            return None
+        diff = curr - prev_val
+        return fmt.format(diff)
+
+    col_s1, col_s2 = st.columns(2)
+    col_s1.metric(
+        "Queries",
+        stats.total_queries,
+        delta=int(stats.total_queries - (prev.total_queries if prev else stats.total_queries)) or None,
+    )
+    col_s2.metric(
+        "Errors",
+        stats.error_count,
+        delta=int(stats.error_count - (prev.error_count if prev else stats.error_count)) or None,
+        delta_color="inverse",
+    )
+
+    col_s3, col_s4 = st.columns(2)
+    prev_avg = prev.avg_latency_sec if prev else None
+    col_s3.metric(
+        "Avg Latency",
+        f"{stats.avg_latency_sec:.2f}s",
+        delta=f"{stats.avg_latency_sec - prev_avg:.2f}s" if prev_avg else None,
+        delta_color="inverse",
+    )
+    col_s4.metric(
+        "P95 Latency",
+        f"{stats.p95_latency_sec:.2f}s",
+    )
+
+    col_s5, col_s6 = st.columns(2)
+    col_s5.metric(
+        "Total Cost",
+        f"${stats.total_cost_usd:.4f}",
+    )
+    col_s6.metric(
+        "Total Tokens",
+        f"{stats.total_tokens:,}",
+    )
+
+    if stats.total_queries > 0:
+        err_pct = round(stats.error_rate * 100, 1)
+        st.caption(f"Error rate: {err_pct}% (rolling {len(call_log[-20:])} calls)")
+
+    # Update prev stats for next render
+    st.session_state.prev_stats = stats
+
+    st.markdown("---")
+
+    # --- Memory Status ---
+    st.subheader("🧠 Memory")
+    mem = st.session_state.memory
+    st.caption(f"Turns: {mem.turn_count} | Messages: {len(mem)}")
+    if mem._summaries:
+        st.caption(f"Summaries: {len(mem._summaries)} (older turns compressed)")
+    st.caption(f"Est. tokens: ~{mem.token_estimate()}")
+
+    if st.button("🗑️ New Chat", use_container_width=True):
+        st.session_state.memory.clear()
+        clear_call_log()
+        st.session_state.prev_stats = None
+        st.rerun()
+
+    st.markdown("---")
+
     # --- RAGAS Score Bars (from last evaluation report) ---
-    report = load_report()
-    if report and report.get("ragas_scores"):
+    report_sidebar = load_report()
+    if report_sidebar and report_sidebar.get("ragas_scores"):
         st.subheader("📈 RAGAS Scores")
-        ragas = report["ragas_scores"]
+        ragas = report_sidebar["ragas_scores"]
         targets = {
             "faithfulness": RAGAS_FAITHFULNESS_TARGET,
             "answer_relevancy": RAGAS_ANSWER_RELEVANCY_TARGET,
@@ -219,21 +318,10 @@ with st.sidebar:
                 icon = "✅" if passed else "❌"
                 st.caption(f"{icon} {label}: **{score:.2f}** (target ≥ {target})")
                 st.progress(min(score, 1.0))
-        st.markdown("---")
-    elif report:
-        st.subheader("📈 RAGAS Scores")
-        st.caption("Run `ragas_eval.py` to compute scores.")
-        st.markdown("---")
-
-    # --- Session info ---
-    if st.button("🗑️ New Chat", use_container_width=True):
-        st.session_state.memory.clear()
-        st.rerun()
-    st.caption(f"Turns this session: {st.session_state.memory.turn_count}")
 
 
 # ---------------------------------------------------------------------------
-# Fix hints for dashboard drill-down panel (must be defined before tab renders)
+# Fix hints for dashboard drill-down panel
 # ---------------------------------------------------------------------------
 FIX_RECOMMENDATIONS_SHORT = {
     "01-Functional": "Increase top-k or fix chunk boundaries so all list items are retrieved together.",
@@ -261,6 +349,17 @@ with tab_chat:
         "Ask anything about admissions, fees, placements, departments, or campus facilities. "
         "Every answer is grounded in the official BVRIT knowledge base with citations."
     )
+
+    # Show any pending alerts from the previous response
+    if st.session_state.last_alert:
+        alert = st.session_state.last_alert
+        if alert.latency_alert:
+            st.warning(alert.latency_message)
+        if alert.cost_alert:
+            st.warning(alert.cost_message)
+        if alert.error_rate_alert:
+            st.error(alert.error_rate_message)
+        st.session_state.last_alert = None  # clear after display
 
     # -- Render existing conversation history --
     for msg in st.session_state.memory.get_display_messages():
@@ -295,7 +394,29 @@ with tab_chat:
                     section_filter=section_filter,
                 )
 
-            # Badges
+            # ---- Tool call display ----------------------------------------
+            if response.used_tool:
+                tool_label = {
+                    "fee_calculator": "🔢 Fee Calculator",
+                    "date_checker": "📅 Date Checker",
+                }.get(response.tool_name, f"🔧 {response.tool_name}")
+
+                with st.expander(
+                    f"{tool_label} — tool was called automatically",
+                    expanded=False,
+                ):
+                    st.caption("**Tool called:** " + str(response.tool_name))
+                    if response.tool_args:
+                        st.caption("**Arguments:**")
+                        st.json(response.tool_args)
+                    if response.tool_result:
+                        if "error" in response.tool_result:
+                            st.error(f"Tool error: {response.tool_result['error']}")
+                        else:
+                            st.caption("**Result:**")
+                            st.json(response.tool_result)
+
+            # ---- Badges -------------------------------------------------------
             badges = []
             if response.refused:
                 badges.append(f"**{REFUSED_BADGE}**")
@@ -306,9 +427,10 @@ with tab_chat:
             if badges:
                 st.markdown(" ".join(badges))
 
+            # ---- Answer -------------------------------------------------------
             _render_answer(response.answer)
 
-            # Citations expander
+            # ---- Citations expander ------------------------------------------
             if response.citations:
                 with st.expander(f"📎 {len(response.citations)} source(s)"):
                     for cite in response.citations:
@@ -317,7 +439,7 @@ with tab_chat:
                             unsafe_allow_html=True,
                         )
 
-            # Retrieved chunks debug expander
+            # ---- Retrieved chunks debug expander ----------------------------
             if response.retrieved_chunks:
                 with st.expander(
                     f"🔍 Retrieved chunks ({len(response.retrieved_chunks)})",
@@ -336,9 +458,39 @@ with tab_chat:
                         )
                         st.markdown("---")
 
-            st.caption(f"⏱ {response.latency_sec:.2f}s")
+            # ---- Latency + cost caption --------------------------------------
+            last_log = get_call_log()
+            if last_log:
+                last_entry = last_log[-1]
+                st.caption(
+                    f"⏱ {response.latency_sec:.2f}s | "
+                    f"🔤 {last_entry.input_tokens + last_entry.output_tokens} tokens | "
+                    f"💰 ${last_entry.cost_usd:.5f}"
+                )
+            else:
+                st.caption(f"⏱ {response.latency_sec:.2f}s")
 
+        # -- Add assistant response to memory --
         st.session_state.memory.add_assistant(response.answer)
+
+        # -- Maybe trigger summarisation (long sessions) --
+        if st.session_state.memory.should_summarise():
+            from openai import OpenAI
+            from config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL
+            _llm = OpenAI(api_key=OPENROUTER_API_KEY, base_url=OPENROUTER_BASE_URL)
+            did_summarise = st.session_state.memory.maybe_summarise(_llm, model=GENERATION_MODEL)
+            if did_summarise:
+                st.info("🧠 Older conversation turns have been summarised to save context.")
+
+        # -- Check and store threshold alerts for next render --
+        updated_stats = compute_session_stats(get_call_log())
+        last_entry = get_call_log()[-1] if get_call_log() else None
+        alert = check_alerts(updated_stats, last_entry=last_entry)
+        if alert.latency_alert or alert.cost_alert or alert.error_rate_alert:
+            st.session_state.last_alert = alert
+
+        # -- Rerun to refresh sidebar stats --
+        st.rerun()
 
 
 # ============================================================
@@ -357,7 +509,7 @@ with tab_dashboard:
             "python src/eval/test_generator.py\n"
             "python src/eval/test_runner.py\n"
             "python src/eval/judge.py\n"
-            "python src/eval/ragas_eval.py   # optional\n"
+            "python src/eval/ragas_eval.py   # optional — requires OPENAI_API_KEY\n"
             "python src/eval/report.py\n"
             "```"
         )
@@ -506,4 +658,29 @@ with tab_dashboard:
         for ec in errors:
             st.error(f"**{ec['test_id']}**: {ec['error']}")
 
+    # ---- Observability panel in Dashboard ------------------------------
+    st.markdown("---")
+    st.subheader("🔭 Observability — Current Session")
+    obs_log = get_call_log()
+    if obs_log:
+        obs_stats = compute_session_stats(obs_log)
+        o1, o2, o3, o4 = st.columns(4)
+        o1.metric("Total LLM Calls", obs_stats.total_queries)
+        o2.metric("Avg Latency", f"{obs_stats.avg_latency_sec:.2f}s")
+        o3.metric("Total Cost", f"${obs_stats.total_cost_usd:.5f}")
+        o4.metric("Total Tokens", f"{obs_stats.total_tokens:,}")
 
+        with st.expander("📋 Recent LLM Call Log", expanded=False):
+            for entry in reversed(obs_log[-10:]):
+                status_icon = "✅" if entry.status == "success" else "❌"
+                st.markdown(
+                    f"{status_icon} **{entry.timestamp[:19]}** | "
+                    f"`{entry.model}` | "
+                    f"{entry.input_tokens}+{entry.output_tokens} tok | "
+                    f"{entry.latency_sec:.2f}s | "
+                    f"${entry.cost_usd:.5f}"
+                    + (f" | 🔧 {entry.tool_name}" if entry.tool_name else "")
+                    + (f" | ❌ {entry.error_message[:50]}" if entry.error_message else "")
+                )
+    else:
+        st.info("No LLM calls logged yet in this session. Start chatting to see stats.")
