@@ -5,11 +5,14 @@ Core orchestration layer for the BVRIT FAQ Chatbot.
 
 Pipeline per query:
   1. Prompt-injection guard (fast, pre-retrieval) — maps to Dimension 04-Security
-  2. Retrieve top-k chunks from ChromaDB (via retriever.py)
-  3. Build grounded prompt (via prompts.py)
-  4. Call LLM (GPT-4o Mini via OpenRouter)
-  5. Return structured ChatResponse with answer, citations, retrieved chunks,
-     latency, and refusal/conflict/safety flags
+  2. Input length / empty-input guard — maps to Dimension 05-Robustness
+  3. Retrieve top-k chunks from ChromaDB (via retriever.py)
+  4. Build grounded prompt (via prompts.py)
+  5. Call LLM with tool definitions (GPT-4o Mini via OpenRouter)
+     ├── Tool call path: execute tool → call LLM again with result
+     └── Direct answer path: return as-is
+  6. Return structured ChatResponse with answer, citations, retrieved chunks,
+     latency, tool call info, and refusal/conflict/safety flags
 
 Response schema aligns with Architecture.md §6.2:
   {answer, citations, refused, retrieved_chunks, latency_seconds}
@@ -20,6 +23,7 @@ This module is stateless — conversation memory is managed by the caller
 
 from __future__ import annotations
 
+import json
 import re
 import time
 from dataclasses import dataclass, field
@@ -33,6 +37,7 @@ from config import (
     GENERATION_MODEL,
     GENERATION_TEMPERATURE,
     INJECTION_PATTERNS,
+    MAX_INPUT_LENGTH,
     OPENROUTER_API_KEY,
     OPENROUTER_BASE_URL,
     TOP_K,
@@ -46,6 +51,8 @@ if not OPENROUTER_API_KEY:
 
 from prompts import SYSTEM_PROMPT, build_user_message
 from retriever import Retriever
+from tools import TOOL_DEFINITIONS, execute_tool_call
+from observability import logged_llm_call
 
 
 # ---------------------------------------------------------------------------
@@ -62,11 +69,18 @@ class ChatResponse:
     has_conflict: bool = False           # True if ⚠️ conflict flag is in the answer
     was_injected: bool = False           # True if prompt-injection attempt detected (D04)
     error: Optional[str] = None         # set if an exception occurred
+    tool_name: Optional[str] = None      # name of tool called (if any)
+    tool_args: Optional[dict] = None     # arguments passed to tool
+    tool_result: Optional[dict] = None  # tool execution result
 
     # Convenience alias used in some eval code
     @property
     def is_refusal(self) -> bool:
         return self.refused
+
+    @property
+    def used_tool(self) -> bool:
+        return self.tool_name is not None
 
 
 # ---------------------------------------------------------------------------
@@ -76,13 +90,14 @@ class ChatResponse:
 class BVRITChatbot:
     """
     Orchestrates retrieval + grounded generation for the BVRIT FAQ chatbot.
+    Supports function calling for fee calculations and date checks.
 
     Usage:
         chatbot = BVRITChatbot(retriever)
         response = chatbot.ask(
-            question="What is the CSE placement percentage?",
+            question="What is the total 4-year fee for CSE batch 2024?",
             history=[],          # list of {role, content} dicts from memory.py
-            k=5,
+            k=15,
             section_filter=None,
         )
     """
@@ -100,16 +115,6 @@ class BVRITChatbot:
         "no information available",
         "not in my knowledge base",
         "not in the knowledge base",
-    ]
-
-    # Phrases that indicate a safety-related refusal — D03 Safety
-    _SAFETY_PHRASES = [
-        "cannot guarantee",
-        "i cannot promise",
-        "based on past data",
-        "historically",
-        "as per published records",
-        "i can only answer questions about bvrit",
     ]
 
     def __init__(self, retriever: Retriever) -> None:
@@ -131,7 +136,7 @@ class BVRITChatbot:
         section_filter: str | None = None,
     ) -> ChatResponse:
         """
-        Answer a user question using grounded RAG generation.
+        Answer a user question using grounded RAG generation + optional tool calls.
 
         Args:
             question:       The user's natural-language question.
@@ -146,15 +151,43 @@ class BVRITChatbot:
         history = history or []
         start = time.perf_counter()
 
+        # ---- 0. Input length guard (D05-Robustness) -------------------
+        if len(question) > MAX_INPUT_LENGTH:
+            elapsed = time.perf_counter() - start
+            return ChatResponse(
+                answer=(
+                    f"Your message is too long ({len(question)} characters). "
+                    f"Please keep questions under {MAX_INPUT_LENGTH} characters."
+                ),
+                citations=[],
+                retrieved_chunks=[],
+                latency_sec=round(elapsed, 3),
+                refused=True,
+            )
+
+        # ---- 0b. Empty input guard (D05-Robustness) -------------------
+        stripped = question.strip()
+        if not stripped:
+            elapsed = time.perf_counter() - start
+            return ChatResponse(
+                answer=(
+                    "I didn't receive a question. Please ask me something about BVRIT — "
+                    "for example, about admissions, fees, departments, or placements."
+                ),
+                citations=[],
+                retrieved_chunks=[],
+                latency_sec=round(elapsed, 3),
+                refused=True,
+            )
+
         # ---- 1. Prompt-injection guard (D04-Security) -----------------
         if self._is_injection(question):
             elapsed = time.perf_counter() - start
-            answer = (
-                "I can only answer questions about BVRIT based on the official knowledge base. "
-                "I cannot follow instructions that ask me to override my guidelines."
-            )
             return ChatResponse(
-                answer=answer,
+                answer=(
+                    "I can only answer questions about BVRIT based on the official knowledge base. "
+                    "I cannot follow instructions that ask me to override my guidelines."
+                ),
                 citations=[],
                 retrieved_chunks=[],
                 latency_sec=round(elapsed, 3),
@@ -184,18 +217,65 @@ class BVRITChatbot:
             question=question,
         )
 
-        # ---- 4. Generate ----------------------------------------------
+        # ---- 4. Generate (with function calling) ----------------------
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ]
+
+        tool_name: Optional[str] = None
+        tool_args: Optional[dict] = None
+        tool_result: Optional[dict] = None
+
         try:
-            completion = self._client.chat.completions.create(
+            # First LLM call — with tool definitions
+            completion = logged_llm_call(
+                client=self._client,
                 model=GENERATION_MODEL,
-                temperature=GENERATION_TEMPERATURE,
+                messages=messages,
                 max_tokens=GENERATION_MAX_TOKENS,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
+                temperature=GENERATION_TEMPERATURE,
+                tools=TOOL_DEFINITIONS,
+                tool_choice="auto",
+                query_preview=question,
             )
-            answer = completion.choices[0].message.content.strip()
+
+            msg = completion.choices[0].message
+            finish_reason = completion.choices[0].finish_reason
+
+            # ---- 4a. Tool call path ---------------------------------
+            if finish_reason == "tool_calls" and msg.tool_calls:
+                tc = msg.tool_calls[0]  # handle first tool call
+                tool_name = tc.function.name
+                tool_args = json.loads(tc.function.arguments)
+
+                # Execute the tool
+                tool_result = execute_tool_call(tool_name, tool_args)
+
+                # Build second-pass messages with tool result
+                messages.append(msg)  # assistant message with tool call
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": json.dumps(tool_result, ensure_ascii=False),
+                })
+
+                # Second LLM call — generate final answer using tool result
+                completion2 = logged_llm_call(
+                    client=self._client,
+                    model=GENERATION_MODEL,
+                    messages=messages,
+                    max_tokens=GENERATION_MAX_TOKENS,
+                    temperature=GENERATION_TEMPERATURE,
+                    query_preview=question,
+                    tool_name=tool_name,
+                )
+                answer = completion2.choices[0].message.content.strip()
+
+            # ---- 4b. Direct answer path (no tool call) --------------
+            else:
+                answer = msg.content.strip() if msg.content else ""
+
         except Exception as exc:
             elapsed = time.perf_counter() - start
             return ChatResponse(
@@ -224,6 +304,9 @@ class BVRITChatbot:
             latency_sec=round(elapsed, 3),
             refused=refused,
             has_conflict=has_conflict,
+            tool_name=tool_name,
+            tool_args=tool_args,
+            tool_result=tool_result,
         )
 
     # ------------------------------------------------------------------
