@@ -55,20 +55,22 @@ EMBEDDING_PROVIDER = "local"
 
 # ---------------------------------------------------------------------------
 # Chunking (used by ingest.py — kept here for reference / UI display)
-# Rationale: 1200 chars (~250-300 words) keeps full paragraphs and tables
-# together without splitting facts; 150-char overlap prevents losing
-# context at boundaries.
+# Rationale: 800 chars (~180-200 words) keeps logical sections (Vision,
+# Mission, Contact) together as single chunks rather than splitting them
+# mid-section; 120-char overlap preserves cross-boundary context.
+# Previously 1200/150 — caused vision/mission text to land at the tail of a
+# chunk starting with awards text, making it semantically unretrievable.
 # ---------------------------------------------------------------------------
-CHUNK_SIZE = 1200          # target characters per chunk
-CHUNK_OVERLAP = 150        # ~12.5% overlap to preserve cross-boundary context
-CHUNK_SIZE_TOKENS = 300    # approximate token count (1 token ≈ 4 chars)
-CHUNK_OVERLAP_TOKENS = 38
+CHUNK_SIZE = 800           # target characters per chunk
+CHUNK_OVERLAP = 120        # ~15% overlap to preserve cross-boundary context
+CHUNK_SIZE_TOKENS = 200    # approximate token count (1 token ≈ 4 chars)
+CHUNK_OVERLAP_TOKENS = 30
 
 # ---------------------------------------------------------------------------
 # Retrieval
 # ---------------------------------------------------------------------------
-TOP_K = 15                 # default number of chunks returned per query
-TOP_K_MAX = 30             # upper bound for sidebar slider
+TOP_K = 20                 # default number of chunks returned per query
+TOP_K_MAX = 40             # upper bound for sidebar slider
 
 # ---------------------------------------------------------------------------
 # Generation — all LLM calls go through OpenRouter
@@ -82,7 +84,7 @@ GENERATION_MAX_TOKENS = 1024
 # Using different model families avoids self-evaluation bias (per brief §5)
 # ---------------------------------------------------------------------------
 TEST_GENERATOR_MODEL = "openai/gpt-4o-mini"   # cheap, sufficient for test generation
-JUDGE_MODEL = "openai/gpt-4o-mini"           # cheap judge model
+JUDGE_MODEL = "openai/gpt-4o-mini"            # cheap judge model
 JUDGE_TEMPERATURE = 0.0
 
 MIN_TEST_CASES = 20

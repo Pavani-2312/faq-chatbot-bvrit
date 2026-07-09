@@ -499,12 +499,120 @@ with tab_chat:
 with tab_dashboard:
     st.header("📊 Evaluation Dashboard")
 
+    # ---- Run Evaluation panel ------------------------------------------
+    with st.expander("🚀 Run Evaluation Pipeline", expanded=False):
+        st.markdown(
+            "Runs the full 3-step evaluation pipeline against the live chatbot:\n"
+            "1. **Generate** 20 test cases (LLM #1)\n"
+            "2. **Run** all cases through the chatbot (LLM #2)\n"
+            "3. **Judge** results (LLM #3) + compile report"
+        )
+
+        col_run1, col_run2 = st.columns([1, 1])
+        run_n = col_run1.number_input(
+            "Number of test cases", min_value=10, max_value=40, value=20, step=5,
+            help="Total test cases generated across all 8 dimensions."
+        )
+        skip_generate = col_run2.checkbox(
+            "Skip test generation (reuse existing test_cases.json)",
+            value=False,
+            help="Use when you only want to re-run the chatbot + judge on existing cases."
+        )
+
+        run_btn = st.button("▶️ Run Evaluation Now", type="primary", use_container_width=True)
+
+        if run_btn:
+            if not st.session_state.retriever_loaded:
+                st.error("Knowledge base not loaded. Run `python src/ingest.py` first.")
+            else:
+                import subprocess, sys as _sys
+
+                log_box = st.empty()
+                progress_bar = st.progress(0)
+                log_lines: list[str] = []
+
+                def _stream_step(cmd: list[str], label: str, progress: float) -> bool:
+                    """Run a subprocess, stream output into the log box. Returns True on success."""
+                    log_lines.append(f"\n--- {label} ---")
+                    log_box.code("\n".join(log_lines[-60:]), language=None)
+                    try:
+                        proc = subprocess.Popen(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                            cwd=str(Path(__file__).resolve().parent),
+                        )
+                        for line in proc.stdout:
+                            log_lines.append(line.rstrip())
+                            log_box.code("\n".join(log_lines[-60:]), language=None)
+                        proc.wait()
+                        progress_bar.progress(progress)
+                        if proc.returncode != 0:
+                            log_lines.append(f"❌ {label} failed (exit {proc.returncode})")
+                            log_box.code("\n".join(log_lines[-60:]), language=None)
+                            return False
+                        log_lines.append(f"✅ {label} complete")
+                        log_box.code("\n".join(log_lines[-60:]), language=None)
+                        return True
+                    except Exception as exc:
+                        log_lines.append(f"❌ {label} error: {exc}")
+                        log_box.code("\n".join(log_lines[-60:]), language=None)
+                        return False
+
+                venv_python = str(Path(_sys.executable))
+                ok = True
+
+                # Step 1: Generate test cases
+                if not skip_generate:
+                    ok = _stream_step(
+                        [venv_python, "src/eval/test_generator.py", "--n", str(int(run_n))],
+                        "Step 1/3 — Generating test cases",
+                        0.33,
+                    )
+                else:
+                    log_lines.append("⏭️  Step 1/3 — Skipped (using existing test_cases.json)")
+                    log_box.code("\n".join(log_lines[-60:]), language=None)
+                    progress_bar.progress(0.33)
+
+                # Step 2: Run test cases through chatbot
+                if ok:
+                    ok = _stream_step(
+                        [venv_python, "src/eval/test_runner.py"],
+                        "Step 2/3 — Running test cases through chatbot",
+                        0.66,
+                    )
+
+                # Step 3: Judge + report
+                if ok:
+                    ok = _stream_step(
+                        [venv_python, "src/eval/judge.py"],
+                        "Step 3/3 — Judging results",
+                        0.90,
+                    )
+
+                if ok:
+                    ok = _stream_step(
+                        [venv_python, "src/eval/report.py"],
+                        "Compiling report",
+                        1.0,
+                    )
+
+                if ok:
+                    st.success("✅ Evaluation complete! Report updated below.")
+                    # Invalidate the cached report so the dashboard reloads fresh data
+                    load_report.clear()
+                    st.rerun()
+                else:
+                    st.error("❌ Evaluation failed — see log above for details.")
+
+    st.markdown("---")
+
     report = load_report()
 
     if report is None:
         st.info(
-            "No evaluation report found yet.\n\n"
-            "Run the full evaluation pipeline:\n"
+            "No evaluation report found yet. Click **Run Evaluation Now** above, or run manually:\n"
             "```bash\n"
             "python src/eval/test_generator.py\n"
             "python src/eval/test_runner.py\n"

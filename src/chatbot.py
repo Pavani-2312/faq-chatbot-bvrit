@@ -218,10 +218,29 @@ class BVRITChatbot:
         )
 
         # ---- 4. Generate (with function calling) ----------------------
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ]
+        # Build messages array:
+        # - If there is prior history, inject it as real role-based messages
+        #   so the model has native multi-turn awareness. The retrieved context
+        #   is attached to the current user turn only.
+        # - If no history, keep the simple [system, user] structure.
+        if history:
+            # Separate summary system messages from actual turns
+            summary_msgs = [m for m in history if m["role"] == "system"]
+            turn_msgs    = [m for m in history if m["role"] != "system"]
+
+            messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+            # Inject any conversation summary as an additional system message
+            for sm in summary_msgs:
+                messages.append(sm)
+            # Inject prior turns as real user/assistant messages (no context block)
+            messages.extend(turn_msgs)
+            # Current user turn gets the retrieved context attached
+            messages.append({"role": "user", "content": user_message})
+        else:
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ]
 
         tool_name: Optional[str] = None
         tool_args: Optional[dict] = None

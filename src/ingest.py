@@ -103,6 +103,60 @@ def _clean_text(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Heading-aware section splitter
+# ---------------------------------------------------------------------------
+
+_RE_HEADING = re.compile(r"^(#{1,3} .+)$", re.MULTILINE)
+
+
+def _split_by_headings(text: str, max_section_size: int) -> list[str]:
+    """
+    Split markdown text on ## / ### headings so that each logical section
+    (Vision, Mission, Core Values, etc.) becomes its own unit before
+    character-level chunking.
+
+    Sections smaller than min_section_size are merged with the next section
+    so their embeddings are not too sparse (e.g. a one-line Vision statement
+    alone would score poorly against 'what is BVRIT's vision?').
+
+    Sections larger than max_section_size are passed through unchanged —
+    the character chunker will further split them.
+    """
+    MIN_SECTION = 200   # merge sections shorter than this into the next one
+
+    boundaries = [m.start() for m in _RE_HEADING.finditer(text)]
+
+    if len(boundaries) <= 1:
+        return [text]
+
+    raw_sections: list[str] = []
+    for i, start in enumerate(boundaries):
+        end = boundaries[i + 1] if i + 1 < len(boundaries) else len(text)
+        section = text[start:end].strip()
+        if section:
+            raw_sections.append(section)
+
+    # Merge short sections forward into the next one
+    merged: list[str] = []
+    buf = ""
+    for sec in raw_sections:
+        if buf:
+            buf = buf + "\n\n" + sec
+        else:
+            buf = sec
+        if len(buf) >= MIN_SECTION:
+            merged.append(buf)
+            buf = ""
+    if buf:
+        if merged:
+            merged[-1] = merged[-1] + "\n\n" + buf   # append leftover to last
+        else:
+            merged.append(buf)
+
+    return merged if merged else [text]
+
+
+# ---------------------------------------------------------------------------
 # Chunker
 # ---------------------------------------------------------------------------
 
@@ -250,7 +304,9 @@ def ingest(
             files_skipped += 1
             continue
 
-        chunks = _chunk_text(clean, chunk_size, overlap)
+        chunks = []
+        for section in _split_by_headings(clean, chunk_size):
+            chunks.extend(_chunk_text(section, chunk_size, overlap))
         if not chunks:
             files_skipped += 1
             continue
