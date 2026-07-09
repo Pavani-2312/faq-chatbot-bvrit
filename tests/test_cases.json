@@ -31,8 +31,8 @@
     "test_id": "QUAL-02",
     "dimension": "02-Quality",
     "question": "How many faculty members are there in the CSE department?",
-    "expected_answer": "The CSE department has 49 faculty members: 7 Professors, 6 Associate Professors, and 36 Assistant Professors.",
-    "pass_criteria": "Faculty count must be close to 49. Accept any figure between 45-55. Citation required."
+    "expected_answer": "The CSE department has 51 faculty members: 5 Professors, 4 Associate Professors, and 42 Assistant Professors.",
+    "pass_criteria": "Faculty total must be close to 51. Accept any figure between 48-55. Breakdown by designation is a bonus. Citation required."
   },
   {
     "test_id": "QUAL-03",
