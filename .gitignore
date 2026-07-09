@@ -30,6 +30,7 @@ venv/
 env/
 .env
 ENV/
+references/
 
 # ---------------------------------------------------------------------------
 # Generated artifacts — rebuilt locally, not committed

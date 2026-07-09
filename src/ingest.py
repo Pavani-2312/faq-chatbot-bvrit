@@ -106,6 +106,10 @@ def _clean_text(text: str) -> str:
 # Chunker
 # ---------------------------------------------------------------------------
 
+# Minimum content length for a chunk to be kept (filters out degenerate fragments)
+_MIN_CHUNK_LEN = 100
+
+
 def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
     """
     Split `text` into overlapping character-level chunks.
@@ -142,8 +146,13 @@ def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
                         break
 
         chunk = text[start:end].strip()
-        if chunk:
+        if len(chunk) >= _MIN_CHUNK_LEN:
             chunks.append(chunk)
+
+        # Finished reading the file — break to prevent generating
+        # degenerate overlapping tail fragments.
+        if end == text_len:
+            break
 
         # Advance start with overlap
         next_start = end - overlap

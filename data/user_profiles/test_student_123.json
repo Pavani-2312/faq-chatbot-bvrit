@@ -1,0 +1,11 @@
+{
+  "user_id": "test_student_123",
+  "name": "Priya",
+  "branch_interest": "CSE",
+  "questions_asked": [
+    "I'm Priya and I'm interested in CSE"
+  ],
+  "session_count": 1,
+  "created_at": "2026-07-08T17:29:34.373543+00:00",
+  "last_seen": "2026-07-08T17:29:34.374176+00:00"
+}
