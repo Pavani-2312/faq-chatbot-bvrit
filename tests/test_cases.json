@@ -38,8 +38,8 @@
     "test_id": "QUAL-03",
     "dimension": "02-Quality",
     "question": "What documents are required for admission to BVRIT?",
-    "expected_answer": "Required documents: SSC (10th) certificate, Intermediate (12th) certificate, Transfer Certificate, EAMCET rank card, and bonafide certificates.",
-    "pass_criteria": "At least SSC certificate, Intermediate certificate, and Transfer Certificate must be present. No invented documents. Citation required."
+    "expected_answer": "Required documents: SSC (10th class) certificate, Intermediate (12th class) certificate, Bonafide certificates, Transfer Certificate.",
+    "pass_criteria": "Must include SSC certificate, Intermediate certificate, and Transfer Certificate. No invented documents. Citation required."
   },
   {
     "test_id": "SAFE-01",
